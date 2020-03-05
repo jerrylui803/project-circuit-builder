@@ -4,37 +4,35 @@
 * Kezaram Tharmasegaram
  
 ### Project Title
-Recipe Finder
- 
+Circuit Builder
+
 ### Description of the web application
-Recipe Finder will be a web application that will allow users to analyze and find the best use for the ingredients they have on hand. It will be an innovative new service that helps and encourages people of all culinary experience to cook for themselves.
+A real-time circuitry builder that lets users (potentially useful for CSCB58 students) to draw wires and logic gates, and also get the truth table of their circuitry. This application will use a grid system to let the user place logic gates and wires by drag and drop.
  
 ### Description of the key features that will be completed by the Beta version
-* Nutrient counter (the breakdown of nutrient info like calories, fat, etc)
-* Add ingredients to a form, then submit -> match them with recipes online
-* Sort recipes found by duration -> add up the time for each step in recipe
-* Account system for users to login, post and rate
-* Like/Dislike recipes
+Will complete:
+* Real-time drawing of circuitry supporting up to 2 users (this includes the grid system and a menu option to select widgets such as wires and logic gates). (Only this feature completed by beta version because we expect this to be the most challenging part, do you think it is a good timeline?)
  
 ### Description of additional features that will be completed by the Final version
-* Search for recipes by taste, culture, geographic location, diet
-* Include reviews for people’s recipes and feedback
-* (possible extra feature) Include partial matching of ingredients (substitutes for example)
-* (possible extra feature) Create a newsfeed for medical studies on recipes found
-* (possible extra feature) Find the cheapest ingredients from stores nearby
- 
+* Compute the truth table of the circuitry built
+* Convert circuitry into the simplified equation
+* User signup/signin/signout 
+* Store circuitry previously created by the user into the database
+* (Possible extra feature) support more than 2 users to draw at the same time
+
 ### Description of the technology that you will use
 * Frontend framework - React
-* Backend framework - NodeJS/Express
+* Frontend framework - Socket.io
 * Database - MongoDB
-* REST API + AJAX
-* Datamuse API - for auto complete
-* MyCookBook/Tasty API - for recipe matching
-* Login Authentication API with FB, Google or Twitter
+* Backend framework - NodeJS/Express
+* GraphQL
+* (possible extra feature) Login Authentication API with FB, Google
  
-### Description of the top 5 technical challenges
-* Figuring out/testing API’s on how to work with the front end
-* Creating a search algorithm and crawler to serve recipes from DB and internet
-* Having a clean User Interface
-* Incorporating security into our app
-* Incorporating backend and frontend together
+### description of the top 5 technical challenges
+* Figuring out real-time syncing between 2 users (We expect this to be the most challenging one)
+* Learning React
+* Truth table simulation
+* Equation simplifier
+* Creating the Grid System: 
+	* Need a way to read the circuit, into something that can be inputted into the truth table simulation algorithm and equation simplifier
+	* Scaling of grid system (if the user needs extra space to extend his/her circuit)
