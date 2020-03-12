@@ -7,7 +7,6 @@ class GateHandler {
     }
 
     handleMouseDown(){
-        console.log(mouseDown);
         if(mouseDown && tool == "ADD"){
             this.hover.setPlaced(true);
             // let xpos = this.hover.valX;
@@ -88,10 +87,10 @@ class GateHandler {
         }
        //draw the connectors
        for(var key in connectors){
-        if (connectors.hasOwnProperty(key)) {           
-            connectors[key].draw();
+            if (connectors.hasOwnProperty(key)) {           
+                connectors[key].draw();
+            }
         }
-    }
     }
 
     handleMouseUp(){
@@ -160,8 +159,10 @@ class LogicGate {
 
     destroyConnectors(){
         for(let i = 0; i < this.input.length; i++){
+            connectors[this.input[i]].destroyWires();
             delete connectors[this.input[i]];
         }
+        connectors[this.output].destroyWires();
         delete connectors[this.output];
     }
 
