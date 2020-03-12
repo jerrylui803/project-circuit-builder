@@ -11,6 +11,12 @@ var scaleY = canvasHeight / canvas.getBoundingClientRect().height;
 var prevX, prevY;
 var tool;
 
+var connectorID = 0;
+var gateID = 0;
+var gates = [];
+var wires = [];
+var connectors = {};
+
 var connectorDiameter = 10;
 
 var offsetX = canvas.offsetLeft;
@@ -59,6 +65,97 @@ function updateMousePos(e){
     // currY = Math.floor(currY/25) * 25;
 }
 
+//[===============Wire.js Start===============]
+
+class WireManager{
+    constructor(){
+        wires = [];
+        this.hover = null;
+        this.drawing = false;
+    }
+    handleMouseDown(){
+        if(tool == "EDGE"){
+            if(!this.drawing){
+                //Find out which connector the user is trying to draw a wire from.
+                //users can draw wire from output to input only.
+                //Loop through all connector nodes
+                for(let i = connectors.length - 1; i >= 0; i--){
+                    if(connectors[i].checkMouseHitbox()){
+                        //create start point of wire
+                        this.hover = new Wire(connectors[i]);
+                        console.log("creating new wire at",connectors[i]);
+                        break;
+                    }
+                }
+            }
+        }
+
+        if(this.hover){
+            this.hover.draw();
+        }
+        
+    }
+    handleMouseUp(){
+
+    }
+    handleMouseMove(){
+        if(this.hover){
+            this.hover.draw();
+        }   
+    }
+
+
+}
+
+
+
+
+class Wire{
+    constructor(start){
+        this.start = start;
+        this.end = null;
+        this.value = start.getValue();
+    }
+
+    setEnd(end){
+        this.end = end;
+    }
+
+    draw(){
+        c.strokeStyle = "black";
+        c.beginPath();
+        c.moveTo(this.start.getX(), this.start.getY());
+        if(this.end){
+            c.lineTo(this.end.getX(), this.end.getY());
+        }
+        else{
+            c.lineTo(currX, currY);
+        }
+        c.stroke();
+    }
+
+    setEnd(end){
+        //Cannot connect to itself
+        if(end == this.start){
+            return false;
+        }
+        else{
+            this.end = end;
+        }
+        return true;
+    }
+
+}
+
+//[===============Wire.js Start===============]
+
+
+
+
+
+
+
+
 //[===============Connector.js Start===============]
 const CType = {
     IN: 0,
@@ -66,12 +163,16 @@ const CType = {
 }
 
 class Connector{
-    constructor(x, y, type, value){
+    constructor(x, y, type, value, gateID){
         this.x = x;
         this.y = y;
         this.d = connectorDiameter;
         this.type = type;
         this.value = value;
+        this.connectorID = connectorID++;
+        this.placed = false;
+        //keep track of parent gate
+        this.gateID = gateID;
     }
 
     updatePosition(x, y){
@@ -101,13 +202,22 @@ class Connector{
     }
 
     checkMouseHitbox(){
-        return (dist(currX, currY, this.x, this.y) < (this.d) / 2);
+        let a = currX - this.x;
+        let b = currY - this.y;
+        return (Math.sqrt((a*a) + (b*b)) < (this.d * 2));
     }
 
     draw(){
+        if(!this.placed){
+            c.globalAlpha = 0.4;
+        }
+        else{
+            c.globalAlpha = 1.0;
+        }
         c.beginPath();
         c.lineWidth = 4;
-        c.strokeStyle = "black";
+        if(this.checkMouseHitbox()) c.strokeStyle = "red";
+        else c.strokeStyle = "black";
         c.arc(this.x, this.y, this.d, 2 * Math.PI, false);
         c.closePath();
         c.stroke();
@@ -122,46 +232,48 @@ class Connector{
 //[===============LogicGate.js Start===============]
 class GateHandler {
     constructor(){
-        this.gates = [];
+        gates = [];
         this.hover = null;
         this.moving = null;
         this.placed = false;
     }
 
     handleMouseDown(){
+        console.log(mouseDown);
         if(mouseDown && tool == "ADD"){
-            this.hover.placed = true;
+            this.hover.setPlaced(true);
             // let xpos = this.hover.valX;
             // let ypos = this.hover.valY;
             // this.hover.addInput(new Connector(xpos - 100, ypos, CType.IN, 0));
             // this.hover.addOutput(new Connector(xpos + 50, ypos, CType.OUT, 1));
-            this.gates.push(this.hover);
+            gates.push(this.hover);
             this.hover = null;
             this.placed = true;
         }
         else if(mouseDown && tool == "REMOVE"){
             //remove the newest gate
-            for(let i = this.gates.length - 1; i >= 0; i--){
-                if(this.gates[i].checkMouseHitbox()){
-                    console.log("removing gate",i);
-                    this.gates.splice(i, 1);
+            for(let i = gates.length - 1; i >= 0; i--){
+                if(gates[i].checkMouseHitbox()){
+                    console.log("removing gate",i);//------------------------------------------------
+                    gates[i].destroyConnectors();
+                    gates.splice(i, 1);
                     break;
                 }
             }
         }
         else if(mouseDown && tool == "MOVE"){
-            for(let i = this.gates.length - 1; i >= 0; i--){
-                if(this.gates[i].checkMouseHitbox()){
+            for(let i = gates.length - 1; i >= 0; i--){
+                if(gates[i].checkMouseHitbox()){
                     console.log("moving gate",i);
-                    this.moving = this.gates[i];
-                    this.gates.splice(i, 1);
+                    this.moving = gates[i];//------------------------------------------------
+                    gates.splice(i, 1);
                     break;
                 }
             }
         }
 
-        for(let i = 0; i < this.gates.length; i++){
-            this.gates[i].draw();
+        for(let i = 0; i < gates.length; i++){
+            gates[i].draw();
         }
         //draw hover after so that it stays on top
         if(this.hover){
@@ -171,20 +283,32 @@ class GateHandler {
         if(this.moving){
             this.moving.draw();
         }
-        
+        mouseDown = false;
+        //draw the connectors
+        for(var key in connectors){
+            if (connectors.hasOwnProperty(key)) {           
+                connectors[key].draw();
+            }
+        }
     }
 
     handleMouseMove(){
-        for(let i = 0; i < this.gates.length; i++){
-            this.gates[i].draw();
+        for(let i = 0; i < gates.length; i++){
+            gates[i].draw();
         }
 
         if(tool != "ADD"){
+            if(this.hover){
+                this.hover.destroyConnectors();   //------------------------------------------------
+            }
             this.hover = null;
         }
         if(tool == "ADD" && !this.placed){
-            let newGate = new LogicGate("NOT");
-            this.hover = newGate;
+            //If hover doesnt exist yet, make a new hover
+            if(this.hover == null){
+                let newGate = new LogicGate("NOT");
+                this.hover = newGate;
+            }
         }
         if(this.hover){
             this.hover.updatePosition(currX, currY);
@@ -194,13 +318,18 @@ class GateHandler {
             this.moving.movePosition(mouseDx, mouseDy);
             this.moving.draw();
         }
-
+       //draw the connectors
+       for(var key in connectors){
+        if (connectors.hasOwnProperty(key)) {           
+            connectors[key].draw();
+        }
+    }
     }
 
     handleMouseUp(){
         this.placed = false;
         if(tool == "MOVE" && this.moving){
-            this.gates.push(this.moving);
+            gates.push(this.moving);//------------------------------------------------
             this.moving = null;
         }
     }
@@ -225,7 +354,7 @@ class LogicGate {
         this.input = [];
         this.output = null;
         this.placed = false;
-
+        this.gateID = gateID++;
         //To help with hitbox detection
         this.x;
         this.y;
@@ -233,8 +362,17 @@ class LogicGate {
         this.dy;
 
         //this.valX+(connectorDiameter/2)+(this.width/2)
-        this.input.push(new Connector(this.valX-((connectorDiameter/2)+(this.width/2)), this.valY, CType.IN, 0));
-        this.output = new Connector(this.valX+((connectorDiameter/2)+(this.width/2)), this.valY, CType.OUT, 1);
+        // this.input.push(new Connector(this.valX-((connectorDiameter/2)+(this.width/2)), this.valY, CType.IN, 0, this.gateID));
+        // this.output = new Connector(this.valX+((connectorDiameter/2)+(this.width/2)), this.valY, CType.OUT, 1, this.gateID);
+        let input1 = new Connector(this.valX-((connectorDiameter/2)+(this.width/2)), this.valY, CType.IN, 0, this.gateID);
+        let output = new Connector(this.valX+((connectorDiameter/2)+(this.width/2)), this.valY, CType.OUT, 1, this.gateID);
+
+        connectors[input1.connectorID] = input1;
+        connectors[output.connectorID] = output;
+
+        this.input.push(input1.connectorID);
+        this.output = output.connectorID;
+
     }
 
     addInput(input){
@@ -243,6 +381,20 @@ class LogicGate {
     
     addOutput(output){
         this.output = output;
+    }
+    setPlaced(val){
+        this.placed = val;
+        for(let i = 0; i < this.input.length; i++){
+            connectors[this.input[i]].placed = val;
+        }
+        connectors[this.output].placed = val;
+    }
+
+    destroyConnectors(){
+        for(let i = 0; i < this.input.length; i++){
+            delete connectors[this.input[i]];
+        }
+        delete connectors[this.output];
     }
 
     updatePosition(x, y){
@@ -254,10 +406,12 @@ class LogicGate {
         this.dy = y + (this.height/2);
 
         //console.log(this.valX, this.valY, this.x, this.y, this.dx, this.dy);
-
-        // for(let i = 0; i < this.input.length; i++){
-        //     this.input[i].updatePosition(x, y);
-        // }
+        //TODO: evenly distribute inputs along gate input side
+        for(let i = 0; i < this.input.length; i++){
+            connectors[this.input[i]].updatePosition(x-((connectorDiameter/2)+(this.width/2)), y);
+        }
+        connectors[this.output].updatePosition(x+((connectorDiameter/2)+(this.width/2)), y);
+        
         return;
     }
 
@@ -270,9 +424,9 @@ class LogicGate {
         this.dy = this.dy + y;
 
         for(let i = 0; i < this.input.length; i++){
-            this.input[i].movePosition(x, y);
+            connectors[this.input[i]].movePosition(x, y);
         }
-        this.output.movePosition(x,y);
+        connectors[this.output].movePosition(x,y);
         return;
     }
 
@@ -313,12 +467,12 @@ class LogicGate {
         c.drawImage(image, this.x, this.y);
         c.stroke();
         c.closePath();
-        for(let i = 0; i < this.input.length; i++){
-            this.input[i].draw();
-        }
-        if(this.output){
-            this.output.draw();
-        }
+        // for(let i = 0; i < this.input.length; i++){
+        //     this.input[i].draw();
+        // }
+        // if(this.output){
+        //     this.output.draw();
+        // }
     }
 
 
@@ -327,6 +481,7 @@ class LogicGate {
 
 
 var gateHandler = new GateHandler();
+var wireManager = new WireManager();
 
 
 
@@ -336,6 +491,7 @@ function handleMouseDown(e) {
     $("#downlog").html("Down: " + currX + " / " + currY);
     c.clearRect(0, 0, canvas.width, canvas.height);
     gateHandler.handleMouseDown();
+    wireManager.handleMouseDown();
 }
 
 function handleMouseUp(e) {
@@ -343,6 +499,7 @@ function handleMouseUp(e) {
     mouseDown = false;
     $("#uplog").html("Up: " + currX + " / " + currY);
     gateHandler.handleMouseUp();
+    wireManager.handleMouseUp();
 
 }
 
@@ -350,6 +507,9 @@ function handleMouseOut(e) {
     updateMousePos(e);
     mouseDown = false;
     $("#outlog").html("Up: " + currX + " / " + currY);
+    console.log("gates",gates);
+    console.log("connectors",connectors);
+    console.log("gateID",gateID);
 
 }
 
@@ -358,6 +518,7 @@ function handleMouseMove(e) {
     $("#movelog").html("Move: " + currX + " / " + currY);
     c.clearRect(0, 0, canvas.width, canvas.height);
     gateHandler.handleMouseMove();
+    wireManager.handleMouseMove();
 }
 
 
