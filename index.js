@@ -65,8 +65,11 @@ function updateMousePos(e){
     // currY = Math.floor(currY/25) * 25;
 }
 
-//[===============Wire.js Start===============]
+function updateCircuitState(){
 
+}
+
+//[===============Wire.js Start===============]
 class WireManager{
     constructor(){
         wires = [];
@@ -85,13 +88,14 @@ class WireManager{
         }
         //Input type connector, check if it has any wires already connected
         else{
+            console.log("input type connector");
             //Loop through all wires, check if this connector already has wire
             for(let i = 0; i < wires.length; i++){
                 let curr = wires[i]
                 //If connector already has a connection
                 //This only works because the current drawn wire is not in wires[]
                 //If it is there is possibility of null ptr!!!!
-                if(curr.start.connectorID == connector.connectorID){
+                if(curr.end.connectorID == connector.connectorID){
                     return false;
                 }
             }
@@ -151,10 +155,10 @@ class WireManager{
                         //If wire is being drawn backwards (output to input)
                         //switch the start and end connectors
                         if(connectors[key].type == CType.IN){
-                            this.hover = new Wire(connectors[key], null);
+                            this.hover = new Wire(null, connectors[key]);
                         }
                         else{
-                            this.hover = new Wire(null, connectors[key]);
+                            this.hover = new Wire(connectors[key], null);
                         }
                         console.log("creating new wire at",connectors[key]);
                         this.drawing = true;
@@ -168,10 +172,15 @@ class WireManager{
                     if(connectors.hasOwnProperty(key) && connectors[key].checkMouseHitbox()){
                         console.log("HIT!");
                         cancel = false;
+                        if(this.checkCancel(this.hover,connectors[key])){
+                            this.hover = null;
+                            this.drawing = false;
+                            break;
+                        }
                         if(this.drawing && this.checkValid(this.hover,connectors[key])){
                             this.hover.setEndpoint(connectors[key]);
                             wires.push(this.hover);
-                            console.log(wires);
+                            wires[wires.length-1].updateValue();
                             this.hover = null;
                             this.drawing = false;
                             break;
@@ -187,26 +196,27 @@ class WireManager{
 
             
         }
-        //Update connectors fill
-        for(var key in connectors){
-            if(connectors.hasOwnProperty(key)){
-                let connected = false;
-                for(let i = 0; i < wires.length; i++){
-                    if(wires[i].start.connectorID == connectors[key].connectorID){
-                        connected = true;
-                    }
-                    else if(wires[i].end.connectorID == connectors[key].connectorID){
-                        connected = true;
-                    }
-                }
-                if(connected){
-                    connectors[key].connected = true;
-                }
-                else{
-                    connectors[key].connected = false;
-                }
-            }
-        }
+        updateConnectors();
+        // //Update connectors fill
+        // for(var key in connectors){
+        //     if(connectors.hasOwnProperty(key)){
+        //         let connected = false;
+        //         for(let i = 0; i < wires.length; i++){
+        //             if(wires[i].start.connectorID == connectors[key].connectorID){
+        //                 connected = true;
+        //             }
+        //             else if(wires[i].end.connectorID == connectors[key].connectorID){
+        //                 connected = true;
+        //             }
+        //         }
+        //         if(connected){
+        //             connectors[key].connected = true;
+        //         }
+        //         else{
+        //             connectors[key].connected = false;
+        //         }
+        //     }
+        // }
 
         for(let i = 0; i < wires.length; i++){
             wires[i].draw();
@@ -220,9 +230,9 @@ class WireManager{
 
     }
     handleMouseMove(){
-        for(let i = 0; i < wires.length; i++){
-            wires[i].draw();
-        }
+        // for(let i = 0; i < wires.length; i++){
+        //     wires[i].draw();
+        // }
         if(this.hover){
             this.hover.draw();
         }   
@@ -231,20 +241,35 @@ class WireManager{
 
 }
 
-
+class Node{
+    constructor(x,y){
+        this.x = x;
+        this.y = y;
+    }
+    updatePoint(x,y){
+        this.x = x;
+        this.y = y;
+    }
+}
 
 
 class Wire{
     constructor(start, end){
         this.start = start; //Will always be of type IN
         this.end = end; //Will always be of type OUT
-        this.value
+        this.value = false;
+        let x, y;
         if(this.start){
-            this.value = this.start.getValue();
+            x = this.start.x;
+            y = this.start.y;
         }
         else{
-            this.value = 0;
+            x = this.end.x;
+            y = this.end.y;
         }
+        this.nodes = [];
+        this.nodes.push(new Node(x,y));
+        this.nodes.push(new Node(x,y));
         
     }
 
@@ -257,23 +282,91 @@ class Wire{
         }
     }
 
+    updateValue(){
+        this.value = this.start.getValue();
+        this.end.updateValue(this.value);
+    }
+
+    calculateNodePos(x1,y1,x2,y2){
+        let meanX = (x1 + x2)/2;
+        let meanY = (y1+y2)/2;
+        if(x1 < x2){
+            this.nodes[0].x = meanX;
+            this.nodes[1].x = meanX;
+            this.nodes[0].y = y1;
+            this.nodes[1].y = y2;
+        }
+        else{
+            this.nodes[0].x = x1;
+            this.nodes[1].x = x2;
+            this.nodes[0].y = meanY;
+            this.nodes[1].y = meanY;
+        }
+        // this.nodes[0].x = x1;
+        // this.nodes[0].y = y1;
+        // this.nodes[1].x = x2;
+        // this.nodes[1].y = y2;
+        
+        
+    }
 
     draw(){
         c.strokeStyle = "black";
         c.beginPath();
-        if(this.start && !this.end){
-            c.moveTo(this.start.getX(), this.start.getY());
-            c.lineTo(currX, currY);
-        }
-        else if(!this.start && this.end){
-            c.moveTo(this.end.getX(), this.end.getY());
-            c.lineTo(currX, currY);
+        if(!this.start || !this.end){
+            c.globalAlpha = 0.4;
         }
         else{
-            c.moveTo(this.start.getX(), this.start.getY());
-            c.lineTo(this.end.getX(), this.end.getY());
+            c.globalAlpha = 1.0;
         }
+        let x1, x2, y1, y2;
+        if(this.start && !this.end){
+            x1 = this.start.getX();
+            y1 = this.start.getY();
+            x2 = currX;
+            y2 = currY;
+        }
+        else if(!this.start && this.end){
+            x2 = this.end.getX();
+            y2 = this.end.getY();
+            x1 = currX;
+            y1 = currY;
+        }
+        else{
+            x1 = this.start.getX();
+            y1 = this.start.getY();
+            x2 = this.end.getX();
+            y2 = this.end.getY();
+        }
+        this.calculateNodePos(x1,y1,x2,y2);
+
+        c.lineJoin = "round";
+        c.lineCap = "round";
+        c.lineWidth = 8;
+        c.strokeStyle = "black";
+        c.moveTo(x1, y1);
+        //c.lineTo(x2, y2);
+        for(let i = 0; i < this.nodes.length; i++){
+            c.lineTo(this.nodes[i].x,this.nodes[i].y);
+        }
+        c.lineTo(x2, y2);
         c.stroke();
+        c.closePath();
+        c.lineWidth = 4;
+        if(this.value) c.strokeStyle = "yellow";
+        else c.strokeStyle = "grey";
+        c.beginPath();
+        c.moveTo(x1, y1);
+        for(let i = 0; i < this.nodes.length; i++){
+            c.lineTo(this.nodes[i].x,this.nodes[i].y);
+        }
+        c.lineTo(x2, y2);
+        //c.lineTo(x2, y2);
+        c.stroke();
+        c.closePath();
+
+
+
     }
 
 
@@ -289,6 +382,31 @@ class Wire{
 
 
 //[===============Connector.js Start===============]
+function updateConnectors(){
+    //Update connectors fill
+    for(var key in connectors){
+        if(connectors.hasOwnProperty(key)){
+            let connected = false;
+            for(let i = 0; i < wires.length; i++){
+                if(wires[i].start.connectorID == connectors[key].connectorID){
+                    connected = true;
+                }
+                else if(wires[i].end.connectorID == connectors[key].connectorID){
+                    connected = true;
+                }
+            }
+            if(connected){
+                connectors[key].connected = true;
+            }
+            else{
+                connectors[key].connected = false;
+                connectors[key].updateValue(false);
+            }
+        }
+    }
+    return;
+}
+
 const CType = {
     IN: 0,
     OUT: 1
@@ -310,12 +428,46 @@ class Connector{
 
     destroyWires(){
         //Iterate through wires and find those which are connected
-        for(let i = 0; i < wires.length; i++){
-            if(this.connectorID == wires[i].start.connectorID ||
-                this.connectorID == wires[i].end.connectorID){
+        let i = 0;
+        let len = wires.length;
+        while(i < len){
+            if(wires[i].start.connectorID == this.connectorID ||
+                wires[i].end.connectorID == this.connectorID){
                 wires.splice(i, 1);
+                i--;
+                len--;
+            }
+            i++;
+        }
+    }
+
+    evaluate(){
+
+    }
+
+    updateValue(value){
+        this.value = value;
+        //find other connectors with same gateID
+        let output;
+        let currGateID = this.gateID;
+        //console.log(!this.value, LogicGate.evaluate(inputs));
+        //console.log(inputs);
+        for(var key in connectors){
+            if(connectors.hasOwnProperty(key) &&
+            connectors[key].gateID == currGateID &&
+            connectors[key].type == CType.OUT){
+                connectors[key].setValue(!this.value);
+                //console.log(connectors[key].connectorID, this.connectorID);
+                output = key;
+                break;
             }
         }
+        for(let i = 0; i < wires.length; i++){
+            if(wires[i].start.connectorID == output){
+                setTimeout(function(){wires[i].updateValue();wires[i].draw(); }, 10);
+            }
+        }
+
     }
 
     updatePosition(x, y){
@@ -402,6 +554,7 @@ class GateHandler {
                 if(gates[i].checkMouseHitbox()){
                     console.log("removing gate",i);//------------------------------------------------
                     gates[i].destroyConnectors();
+                    updateConnectors();
                     gates.splice(i, 1);
                     break;
                 }
@@ -437,6 +590,9 @@ class GateHandler {
                 connectors[key].draw();
             }
         }
+        for(let i = 0; i < wires.length; i++){
+            wires[i].draw();
+        }
     }
 
     handleMouseMove(){
@@ -471,6 +627,9 @@ class GateHandler {
                 connectors[key].draw();
             }
         }
+        for(let i = 0; i < wires.length; i++){
+            wires[i].draw();
+        }
     }
 
     handleMouseUp(){
@@ -484,9 +643,6 @@ class GateHandler {
     handleMouseOut(){
 
     }
-
-
-
 }
 
 
@@ -511,8 +667,8 @@ class LogicGate {
         //this.valX+(connectorDiameter/2)+(this.width/2)
         // this.input.push(new Connector(this.valX-((connectorDiameter/2)+(this.width/2)), this.valY, CType.IN, 0, this.gateID));
         // this.output = new Connector(this.valX+((connectorDiameter/2)+(this.width/2)), this.valY, CType.OUT, 1, this.gateID);
-        let input1 = new Connector(this.valX-((connectorDiameter/2)+(this.width/2)), this.valY, CType.IN, 0, this.gateID);
-        let output = new Connector(this.valX+((connectorDiameter/2)+(this.width/2)), this.valY, CType.OUT, 1, this.gateID);
+        let input1 = new Connector(this.valX-((connectorDiameter/2)+(this.width/2)), this.valY, CType.IN, false, this.gateID);
+        let output = new Connector(this.valX+((connectorDiameter/2)+(this.width/2)), this.valY, CType.OUT, true, this.gateID);
 
         connectors[input1.connectorID] = input1;
         connectors[output.connectorID] = output;
@@ -520,6 +676,17 @@ class LogicGate {
         this.input.push(input1.connectorID);
         this.output = output.connectorID;
 
+    }
+
+    static evaluate(a){
+        switch(this.type){
+            case 0:
+                return !a[0];
+            case 1:
+                return a[0] && a[1];
+            default:
+                return true;
+        }
     }
 
     addInput(input){
