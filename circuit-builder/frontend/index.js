@@ -227,6 +227,8 @@ class WireManager{
         
     }
     handleMouseUp(){
+        console.log("LOGGING WIRE BEFORE UPLOAD")
+        console.log(wires);
         api.uploadWire(wires);
     }
     handleMouseMove(){
@@ -271,6 +273,7 @@ class Wire{
         }
 
         // For real time sync
+        // TODO: I don't think you need this?
         if (newNodes) {
             this.nodes = newNodes;
         } else {
@@ -279,6 +282,8 @@ class Wire{
             this.nodes.push(new Node(x,y));
         }
 
+        console.log("THIS IS this.start in constructure of wire")
+        console.log(this.start)
         
         
     }
@@ -321,6 +326,7 @@ class Wire{
     }
 
     draw(){
+        console.log("DRAWING WIRE!!!!!!!!!!")
         c.strokeStyle = "black";
         c.beginPath();
         if(!this.start || !this.end){
@@ -513,6 +519,7 @@ class Connector{
     }
 
     draw(){
+        console.log("draw fron connector")
         if(!this.placed){
             c.globalAlpha = 0.4;
         }
@@ -648,8 +655,6 @@ class GateHandler {
             gates.push(this.moving);//------------------------------------------------
             this.moving = null;
         }
-        console.log("WHAT ????????")
-        console.log(gates)
         api.uploadGate(gates);
 
     }
@@ -661,19 +666,27 @@ class GateHandler {
 
 
 api.onCanvasUpdate(function (myCanvas) {
+    connectorID = 0;
+    gateID = 0;
+
     console.log("GATE UPDATE HANDLER RUNNING")
     console.log(myCanvas)
-    console.log("DONE PRINTING")
+    console.log("DONE RUNNING GATE UPDATE HANDLER")
 
     // clear previous configuration and canvas
-    gateHandler.gates = [];
+    //gateHandler.gates = [];
+    gates = []
+    connectors=[]
+    wires = [];
+
     c.clearRect(0, 0, canvas.width, canvas.height);
+
 
     // loop through all gates and instantiate them again
     for(let i = 0; i < myCanvas.gate.length; i++){
         let currGate = myCanvas.gate[i];
 
-        var gh = new LogicGate(
+        let myGate = new LogicGate(
             currGate.type,
             currGate.width,
             currGate.height,
@@ -686,27 +699,34 @@ api.onCanvasUpdate(function (myCanvas) {
             currGate.y,
             currGate.dx,
             currGate.dy);
-        gh.draw();
-        gateHandler.gates.push(gh);
+        myGate.draw();
+        //gateHandler.gates.push(gh);
+        gates.push(myGate);
 
     }
 
-    wireManager.wires = [];
-
+    
     for(let i = 0; i < myCanvas.wire.length; i++){
         let currWire = myCanvas.wire[i];
-
-        var gh = new Wire(
-            currWire.start,
-            currWire.end,
+        let startConnector = new Connector(currWire.start.x, currWire.start.y, currWire.start.type, currWire.start.gateId);
+        let endConnector = new Connector(currWire.start.x, currWire.start.y, currWire.start.type, currWire.start.gateId);
+        let myWire = new Wire(
+            startConnector,
+            endConnector,
             currWire.value,
             currWire.nodes);
 
-        gh.draw();
-        wireManager.wires.push(gh);
+        myWire.draw();
+        wires.push(myWire);
 
     }
 
+    //draw the connectors
+    for(var key in connectors){
+        if (connectors.hasOwnProperty(key)) {           
+            connectors[key].draw();
+        }
+    }
 
 
 });
@@ -716,7 +736,7 @@ api.onCanvasUpdate(function (myCanvas) {
 class LogicGate {
 
     constructor(type, newWidth=null, newHeight=null, newValX=null, newValY=null, 
-        newInput=null, newOutput=[], newPlaced=false, newX=null, newY=null, newDx=null, newDy=null, newGateID=null){
+        newInput=null, newOutput=[], newPlaced=false, newX=null, newY=null, newDx=null, newDy=null){
 
         // if we are doing real-time sync
         if (newWidth) {
