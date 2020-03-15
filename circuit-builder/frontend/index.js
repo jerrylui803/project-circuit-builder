@@ -227,7 +227,7 @@ class WireManager{
         
     }
     handleMouseUp(){
-
+        api.uploadWire(wires);
     }
     handleMouseMove(){
         // for(let i = 0; i < wires.length; i++){
@@ -240,6 +240,8 @@ class WireManager{
 
 
 }
+
+
 
 class Node{
     constructor(x,y){
@@ -254,10 +256,10 @@ class Node{
 
 
 class Wire{
-    constructor(start, end){
+    constructor(start, end, newValue=false, newNodes=null){
         this.start = start; //Will always be of type IN
         this.end = end; //Will always be of type OUT
-        this.value = false;
+        this.value = newValue;
         let x, y;
         if(this.start){
             x = this.start.x;
@@ -267,9 +269,17 @@ class Wire{
             x = this.end.x;
             y = this.end.y;
         }
-        this.nodes = [];
-        this.nodes.push(new Node(x,y));
-        this.nodes.push(new Node(x,y));
+
+        // For real time sync
+        if (newNodes) {
+            this.nodes = newNodes;
+        } else {
+            this.nodes = [];
+            this.nodes.push(new Node(x,y));
+            this.nodes.push(new Node(x,y));
+        }
+
+        
         
     }
 
@@ -638,6 +648,10 @@ class GateHandler {
             gates.push(this.moving);//------------------------------------------------
             this.moving = null;
         }
+        console.log("WHAT ????????")
+        console.log(gates)
+        api.uploadGate(gates);
+
     }
 
     handleMouseOut(){
@@ -646,37 +660,125 @@ class GateHandler {
 }
 
 
+api.onCanvasUpdate(function (myCanvas) {
+    console.log("GATE UPDATE HANDLER RUNNING")
+    console.log(myCanvas)
+    console.log("DONE PRINTING")
 
-class LogicGate {
-    constructor(type){
-        this.type = type;
-        this.width = image.width;
-        this.height = image.height;
-        this.valX = currX;
-        this.valY = currY;
-        this.input = [];
-        this.output = null;
-        this.placed = false;
-        this.gateID = gateID++;
-        //To help with hitbox detection
-        this.x;
-        this.y;
-        this.dx;
-        this.dy;
+    // clear previous configuration and canvas
+    gateHandler.gates = [];
+    c.clearRect(0, 0, canvas.width, canvas.height);
 
-        //this.valX+(connectorDiameter/2)+(this.width/2)
-        // this.input.push(new Connector(this.valX-((connectorDiameter/2)+(this.width/2)), this.valY, CType.IN, 0, this.gateID));
-        // this.output = new Connector(this.valX+((connectorDiameter/2)+(this.width/2)), this.valY, CType.OUT, 1, this.gateID);
-        let input1 = new Connector(this.valX-((connectorDiameter/2)+(this.width/2)), this.valY, CType.IN, false, this.gateID);
-        let output = new Connector(this.valX+((connectorDiameter/2)+(this.width/2)), this.valY, CType.OUT, true, this.gateID);
+    // loop through all gates and instantiate them again
+    for(let i = 0; i < myCanvas.gate.length; i++){
+        let currGate = myCanvas.gate[i];
 
-        connectors[input1.connectorID] = input1;
-        connectors[output.connectorID] = output;
-
-        this.input.push(input1.connectorID);
-        this.output = output.connectorID;
+        var gh = new LogicGate(
+            currGate.type,
+            currGate.width,
+            currGate.height,
+            currGate.valX,
+            currGate.valY,
+            currGate.input,
+            currGate.output,
+            currGate.placed,
+            currGate.x,
+            currGate.y,
+            currGate.dx,
+            currGate.dy);
+        gh.draw();
+        gateHandler.gates.push(gh);
 
     }
+
+    wireManager.wires = [];
+
+    for(let i = 0; i < myCanvas.wire.length; i++){
+        let currWire = myCanvas.wire[i];
+
+        var gh = new Wire(
+            currWire.start,
+            currWire.end,
+            currWire.value,
+            currWire.nodes);
+
+        gh.draw();
+        wireManager.wires.push(gh);
+
+    }
+
+
+
+});
+
+
+
+class LogicGate {
+
+    constructor(type, newWidth=null, newHeight=null, newValX=null, newValY=null, 
+        newInput=null, newOutput=[], newPlaced=false, newX=null, newY=null, newDx=null, newDy=null, newGateID=null){
+
+        // if we are doing real-time sync
+        if (newWidth) {
+            this.type = type;
+            this.width = newWidth;
+            this.height = newHeight;
+            this.valX = newValX;
+            this.valY = newValY;
+            this.input = [new Connector(this.valX-((connectorDiameter/2)+(this.width/2)), this.valY, CType.IN, 0)];
+            this.output = new Connector(this.valX+((connectorDiameter/2)+(this.width/2)), this.valY, CType.OUT, 1);
+            this.placed = newPlaced;
+            this.gateID = gateID++;
+            this.x = newX;
+            this.y = newY;
+            this.dx = newDx;
+            this.dy = newDy;
+            let input1 = new Connector(this.valX-((connectorDiameter/2)+(this.width/2)), this.valY, CType.IN, false, this.gateID);
+            let output = new Connector(this.valX+((connectorDiameter/2)+(this.width/2)), this.valY, CType.OUT, true, this.gateID);
+
+            connectors[input1.connectorID] = input1;
+            connectors[output.connectorID] = output;
+
+            this.input.push(input1.connectorID);
+            this.output = output.connectorID;
+
+        } else {
+
+
+
+            this.type = type;
+            this.width = image.width;
+            this.height = image.height;
+            this.valX = currX;
+            this.valY = currY;
+            this.input = [];
+            this.output = null;
+            this.placed = false;
+            this.gateID = gateID++;
+            //To help with hitbox detection
+            this.x;
+            this.y;
+            this.dx;
+            this.dy;
+
+            //this.valX+(connectorDiameter/2)+(this.width/2)
+            // this.input.push(new Connector(this.valX-((connectorDiameter/2)+(this.width/2)), this.valY, CType.IN, 0, this.gateID));
+            // this.output = new Connector(this.valX+((connectorDiameter/2)+(this.width/2)), this.valY, CType.OUT, 1, this.gateID);
+            let input1 = new Connector(this.valX-((connectorDiameter/2)+(this.width/2)), this.valY, CType.IN, false, this.gateID);
+            let output = new Connector(this.valX+((connectorDiameter/2)+(this.width/2)), this.valY, CType.OUT, true, this.gateID);
+
+            connectors[input1.connectorID] = input1;
+            connectors[output.connectorID] = output;
+
+            this.input.push(input1.connectorID);
+            this.output = output.connectorID;
+
+        }
+
+
+    }
+
+
 
     static evaluate(a){
         switch(this.type){
