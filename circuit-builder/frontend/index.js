@@ -229,7 +229,14 @@ class WireManager{
     handleMouseUp(){
         console.log("LOGGING WIRE BEFORE UPLOAD")
         console.log(wires);
-        api.uploadWire(wires);
+        //api.uploadWire(wires);
+        let all = []
+        all.gates = gates;
+        all.wires = wires;
+        all.connectors = connectors;
+        all.connectorID = connectorID;
+        all.gateID = gateID;
+        api.uploadCanvas(all);
     }
     handleMouseMove(){
         // for(let i = 0; i < wires.length; i++){
@@ -420,6 +427,16 @@ function updateConnectors(){
             }
         }
     }
+    //api.uploadConnector(connectors);
+    //api.uploadCanvas(gates, wires, connectors);
+    let all = []
+    all.gates = gates;
+    all.wires = wires;
+    all.connectors = connectors;
+    all.connectorID = connectorID;
+    all.gateID = gateID;
+    api.uploadCanvas(all);
+
     return;
 }
 
@@ -429,17 +446,34 @@ const CType = {
 }
 
 class Connector{
-    constructor(x, y, type, value, gateID){
+
+    constructor(x, y, type, value, gateID, newPlaced=false, newConnected=false, newGateID=null, newConnectorID=null){
+        console.log("NEW CONNECTOR!!!!!!!")
+        console.log(x)
+        console.log(y)
+        console.log(newPlaced)
+        console.log(newConnected)
         this.x = x;
         this.y = y;
         this.d = connectorDiameter;
         this.type = type;
         this.value = value;
         this.connectorID = connectorID++;
-        this.placed = false;
-        this.connected = false;
+        this.placed = newPlaced;
+        this.connected = newConnected;
         //keep track of parent gate
         this.gateID = gateID;
+
+        if (newGateID) {
+            // this.placed = newPlaced;
+            // this.connected = newConnected;
+            this.gateID = newGateID;
+        }
+        if (newConnectorID){
+            this.connectorID = newConnectorID;
+        }
+
+
     }
 
     destroyWires(){
@@ -655,7 +689,18 @@ class GateHandler {
             gates.push(this.moving);//------------------------------------------------
             this.moving = null;
         }
-        api.uploadGate(gates);
+        console.log("BEFORE UPLOADING GATES")
+        console.log(gates)
+        //api.uploadGate(gates);
+        //api.uploadCanvas(gates, wires, connectors);
+        //
+        let all = []
+        all.gates = gates;
+        all.wires = wires;
+        all.connectors = connectors;
+        all.connectorID = connectorID;
+        all.gateID = gateID;
+        api.uploadCanvas(all);
 
     }
 
@@ -676,49 +721,102 @@ api.onCanvasUpdate(function (myCanvas) {
     // clear previous configuration and canvas
     //gateHandler.gates = [];
     gates = []
-    connectors=[]
+    connectors = []
     wires = [];
 
     c.clearRect(0, 0, canvas.width, canvas.height);
 
 
-    // loop through all gates and instantiate them again
-    for(let i = 0; i < myCanvas.gate.length; i++){
-        let currGate = myCanvas.gate[i];
+    //for(let i = 0; i < myCanvas.connector.length; i++){
+    //
+    //constructor(x, y, type, value, gateID, newPlaced=false, newConnected=false, newGateID=null){
+    //
 
-        let myGate = new LogicGate(
-            currGate.type,
-            currGate.width,
-            currGate.height,
-            currGate.valX,
-            currGate.valY,
-            currGate.input,
-            currGate.output,
-            currGate.placed,
-            currGate.x,
-            currGate.y,
-            currGate.dx,
-            currGate.dy);
-        myGate.draw();
-        //gateHandler.gates.push(gh);
-        gates.push(myGate);
+    for (key in myCanvas.connector) {
+        let currConnector = myCanvas.connector[key];
+        let myConnector = new Connector(
+            currConnector.x,
+            currConnector.y,
+            currConnector.type,
+            currConnector.value,
+            currConnector.gateID,
+            currConnector.placed,
+            currConnector.connected,
+            currConnector.gateID,
+            currConnector.connectorID)
+        connectors.push (myConnector);
+    }
 
+
+    if (myCanvas.gate) {
+        // loop through all gates and instantiate them again
+        for(let i = 0; i < myCanvas.gate.length; i++){
+            let currGate = myCanvas.gate[i];
+
+            let myGate = new LogicGate(
+                currGate.type,
+                currGate.width,
+                currGate.height,
+                currGate.valX,
+                currGate.valY,
+                currGate.input,
+                currGate.output,
+                currGate.placed,
+                currGate.x,
+                currGate.y,
+                currGate.dx,
+                currGate.dy);
+            myGate.draw();
+            //gateHandler.gates.push(gh);
+            gates.push(myGate);
+
+        }
     }
 
     
-    for(let i = 0; i < myCanvas.wire.length; i++){
-        let currWire = myCanvas.wire[i];
-        let startConnector = new Connector(currWire.start.x, currWire.start.y, currWire.start.type, currWire.start.gateId);
-        let endConnector = new Connector(currWire.start.x, currWire.start.y, currWire.start.type, currWire.start.gateId);
-        let myWire = new Wire(
-            startConnector,
-            endConnector,
-            currWire.value,
-            currWire.nodes);
+    //return;
+    
+    if (myCanvas.wire) {
 
-        myWire.draw();
-        wires.push(myWire);
+        for(let i = 0; i < myCanvas.wire.length; i++){
+            let currWire = myCanvas.wire[i];
+            // let startConnector = new Connector(currWire.start.x, currWire.start.y, currWire.start.type, currWire.start.gateId);
+            // let endConnector = new Connector(currWire.start.x, currWire.start.y, currWire.start.type, currWire.start.gateId);
 
+            // let startConnector = new Connector(currWire.start.x, currWire.start.y, currWire.start.type, currWire.start.gateId);
+            // let endConnector = new Connector(currWire.start.x, currWire.start.y, currWire.start.type, currWire.start.gateId);
+            let startConnectorID = currWire.start.connectorID
+            let endConnectorID = currWire.end.connectorID
+
+            let startConnector;
+            let endConnector;
+
+            for(let key in connectors){
+                if (connectors.hasOwnProperty(key)) {           
+                    let currConnectorID = connectors[key].connectorID;
+                    if (currConnectorID == startConnectorID) {
+                        startConnector = connectors[key];
+                    } else if (currConnectorID == endConnectorID) {
+                        endConnector = connectors[key];
+                    }
+                }
+            }
+
+            let myWire = new Wire(
+                startConnector,
+                endConnector,
+                currWire.value,
+                currWire.nodes);
+
+
+            myWire.draw();
+            wires.push(myWire);
+
+            //console.log("AFTERRRRRRRRRRRRRRRRRRRRRRRRRRRRRR")
+            //console.log(wires[0].start.placed)
+
+
+        }
     }
 
     //draw the connectors
@@ -728,6 +826,11 @@ api.onCanvasUpdate(function (myCanvas) {
         }
     }
 
+    connectorID = myCanvas.connectorID;
+    gateID = myCanvas.gateID;
+
+    console.log(myCanvas.gate)
+    console.log(myCanvas.connector)
 
 });
 
@@ -745,22 +848,25 @@ class LogicGate {
             this.height = newHeight;
             this.valX = newValX;
             this.valY = newValY;
-            this.input = [new Connector(this.valX-((connectorDiameter/2)+(this.width/2)), this.valY, CType.IN, 0)];
-            this.output = new Connector(this.valX+((connectorDiameter/2)+(this.width/2)), this.valY, CType.OUT, 1);
+            //this.input = [new Connector(this.valX-((connectorDiameter/2)+(this.width/2)), this.valY, CType.IN, 0)];
+            //this.output = new Connector(this.valX+((connectorDiameter/2)+(this.width/2)), this.valY, CType.OUT, 1);
+            this.input=newInput;
+            this.output=newOutput;
             this.placed = newPlaced;
             this.gateID = gateID++;
             this.x = newX;
             this.y = newY;
             this.dx = newDx;
             this.dy = newDy;
-            let input1 = new Connector(this.valX-((connectorDiameter/2)+(this.width/2)), this.valY, CType.IN, false, this.gateID);
-            let output = new Connector(this.valX+((connectorDiameter/2)+(this.width/2)), this.valY, CType.OUT, true, this.gateID);
 
-            connectors[input1.connectorID] = input1;
-            connectors[output.connectorID] = output;
+            // let input1 = new Connector(this.valX-((connectorDiameter/2)+(this.width/2)), this.valY, CType.IN, false, this.gateID);
+            // let output = new Connector(this.valX+((connectorDiameter/2)+(this.width/2)), this.valY, CType.OUT, true, this.gateID);
 
-            this.input.push(input1.connectorID);
-            this.output = output.connectorID;
+            // connectors[input1.connectorID] = input1;
+            // connectors[output.connectorID] = output;
+
+            // this.input.push(input1.connectorID);
+            // this.output = output.connectorID;
 
         } else {
 
@@ -824,6 +930,7 @@ class LogicGate {
             connectors[this.input[i]].placed = val;
         }
         connectors[this.output].placed = val;
+
     }
 
     destroyConnectors(){

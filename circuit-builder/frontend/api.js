@@ -96,7 +96,18 @@ let api = (function(){
         socket.emit('upload wire', myWire);
     }
 
+    module.uploadConnector = function(myConnector) {
+        // Tell the server your username
+        socket.emit('upload connector', myConnector);
+    }
 
+
+
+    module.uploadCanvas = function(all) {
+        console.log("IN API.js RIGHT BEFORE UPLOAD")
+        console.log(all)
+        socket.emit('upload canvas', all.gates, all.wires, all.connectors, all.gateID, all.connectorID);
+    }
 
 
 

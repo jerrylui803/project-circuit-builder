@@ -25,6 +25,9 @@ let numUsers = 0;
 
 let myGate = [];
 let myWire = [];
+let myConnector = [];
+let myGateID;
+let myConnectorID;
 
 io.on('connection', (socket) => {
   let addedUser = false;
@@ -37,8 +40,9 @@ io.on('connection', (socket) => {
       console.log(data)
       myGate = data;
     socket.broadcast.emit('broadcast canvas', {
-      gate: myGate,
-      wire: myWire
+        gate: myGate, 
+        wire: myWire,
+        connector: myConnector
     });
   });
 
@@ -49,8 +53,47 @@ io.on('connection', (socket) => {
       console.log(data)
       myWire = data;
     socket.broadcast.emit('broadcast canvas', {
-      gate: myGate, 
-      wire: myWire
+        gate: myGate, 
+        wire: myWire,
+        connector: myConnector
+    });
+  });
+
+
+  // when the client emits 'new message', this listens and executes
+  socket.on('upload connector', (data) => {
+    // we tell the client to execute 'new message'
+      console.log("received a connector[]!!!")
+      console.log(data)
+      myConnector = data;
+    socket.broadcast.emit('broadcast canvas', {
+        gate: myGate,
+        wire: myWire,
+        connector: myConnector
+  
+    });
+  });
+
+
+  // when the client emits 'new message', this listens and executes
+  socket.on('upload canvas', (data1, data2, data3, data4, data5) => {
+    // we tell the client to execute 'new message'
+      console.log("received a everything to redraw canvas")
+      console.log(data1, data2, data3, data4, data5)
+      myGate = data1;
+      myWire = data2;
+      myConnector = data3;
+      myGateID = data4
+      myGonnectorID = data5
+      // myGate = data1;
+      // myWire = data2;
+      // myConnector = data3;
+    socket.broadcast.emit('broadcast canvas', {
+        gate: myGate,
+        wire: myWire,
+        connector: myConnector,
+        gateID: myGateID,
+        connectorID: myConnectorID
     });
   });
 
