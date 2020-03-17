@@ -474,17 +474,16 @@ class Connector{
 
     updateValue(value){
         this.value = value;
+
         //find other connectors with same gateID
         let output;
         let currGateID = this.gateID;
-        //console.log(!this.value, LogicGate.evaluate(inputs));
-        //console.log(inputs);
+
         for(var key in connectors){
             if(connectors.hasOwnProperty(key) &&
             connectors[key].gateID == currGateID &&
             connectors[key].type == CType.OUT){
                 connectors[key].setValue(!this.value);
-                //console.log(connectors[key].connectorID, this.connectorID);
                 output = key;
                 break;
             }
@@ -528,8 +527,8 @@ class Connector{
         return (Math.sqrt((a*a) + (b*b)) < (this.d * 2));
     }
 
+    // draw the connector
     draw(){
-       // console.log("draw fron connector")
         if(!this.placed){
             c.globalAlpha = 0.4;
         }
@@ -716,6 +715,9 @@ api.onCanvasUpdate(function (myCanvas) {
     gates = [];
     wires = [];
     connectors = {};
+    gateHandler.hover = null;
+    gateHandler.placed = false;
+    gateHandler.moving = null;
 
     // re-create all the connectors
     for (key in myCanvas.connector) {
@@ -810,6 +812,9 @@ api.onCanvasUpdate(function (myCanvas) {
     connectorID = myCanvas.connectorID;
     gateID = myCanvas.gateID;
 
+
+    console.log("GATEID: ", gateID);
+    console.log("CONID: ", connectorID);
     console.log(myCanvas.gate)
     console.log(myCanvas.connector)
 
@@ -860,6 +865,9 @@ class LogicGate {
             // instantiate input and output connectors
             let input1 = new Connector(this.valX-((connectorDiameter/2)+(this.width/2)), this.valY, CType.IN, false, this.gateID);
             let output = new Connector(this.valX+((connectorDiameter/2)+(this.width/2)), this.valY, CType.OUT, true, this.gateID);
+
+            console.log("INPUT1: ", input1);
+            console.log("OUTPUT: ", output);
 
             // add them to connectors dictionary
             connectors[input1.connectorID] = input1;
