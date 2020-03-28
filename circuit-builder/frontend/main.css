@@ -1,0 +1,130 @@
+html {overflow: -moz-scrollbars-vertical;}
+
+(Note that CSS uses the prefix # for IDs and . for Classes.)
+body {
+	background: #FFFFFF;
+	font-family: Arial, Helvetica, sans-serif;
+	font-size: 14px;
+	color: #3C3D3F;
+    text-align: left;
+    max-width: 90%;
+    margin: auto;
+}
+
+header{
+    display:flex;
+    margin-top:36px;
+    height: 64px;
+    justify-content:flex-end;
+}
+
+header #title{
+    color: black;
+    text-decoration:none;
+    margin: 0px;
+    width:100%;
+    font-size:48px;
+}
+
+.surround_box{
+    margin-top:20px;
+    border-radius: 10px;
+    border: 2px #3C3D3F solid;
+    padding:20px 10px 10px 10px;
+    display:flex;
+    flex-direction: column;
+}
+.header_btn{
+    text-decoration:none;
+    font-size: 16px;
+    margin-left:5px;
+    margin-right:5px;
+}
+
+.sub_header{
+    font-size:32px;
+}
+
+#close_button{
+    background-image: url('../media/close33.png');
+}
+
+footer{
+    margin-top: 20px;
+    text-align:center;
+}
+
+.alert{
+    color: red;
+}
+
+img{
+    max-width:95%;
+}
+
+#image_display {
+    margin-top: 50px;
+    margin-bottom: 10px;
+    /*
+    max-width: 600px;
+    max-height: 600px;
+     */
+    font-size: 26px;
+  
+    /* https://www.w3schools.com/howto/howto_css_image_center.asp */
+    display: block;
+    margin-left: auto;
+    margin-right: auto;
+    width: 90%;
+}
+
+.image_and_comment {
+    font-size: 16px;
+    text-align:center;
+    margin-bottom: 30px;
+}
+
+.small_btn {
+    margin: auto;
+    margin-top: 5px;
+    margin-bottom: 5px;
+    height: 16px;
+    width: 150px;
+    font-size: 14px;
+}
+
+.left_btn{
+    float: left;
+}
+
+.right_btn{
+    float: right;
+}
+
+.gallery_owner_btn{
+    margin-top: 5px;
+    margin-bottom: 5px;
+}
+
+.left_right_btn_container{
+    margin-top: 10px;
+
+    float:centre
+    width: 90%;
+    height: 40px;
+}
+
+.hidden{
+    visibility: collapse;
+    position: absolute;
+}
+
+#error_box{
+    color: red;
+    visibility:hidden;
+}
+
+#error_box::before {
+  content: "Error: ";
+}
+

@@ -4,7 +4,15 @@
   "description": "* Kevin Zhu * Jerry Lui * Kezaram Tharmasegaram",
   "main": "index.js",
   "dependencies": {
+    "bcrypt": "^4.0.1",
+    "connect-redis": "^3.4.2",
+    "cookie": "^0.4.0",
     "express": "^4.17.1",
+    "express-session": "^1.17.0",
+    "mongo": "^0.1.0",
+    "mongodb": "^3.5.5",
+    "mongoose": "^5.9.5",
+    "redis": "^3.0.2",
     "socketio": "^1.0.0"
   },
   "devDependencies": {},
