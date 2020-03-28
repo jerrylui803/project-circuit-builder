@@ -6,11 +6,18 @@
 // Setup basic express server
 let express = require('express');
 let path = require('path');
+let helmet = require('helmet');
 let app = express();
+let fs = require("fs");
+let http = require("http");
+let https = require("https");
 
 const bodyParser = require('body-parser');
 app.use(bodyParser.urlencoded({ extended: false }));
 app.use(bodyParser.json());
+
+// for security
+app.use(helmet());
 
 
 // // Set up mongoose connection
@@ -27,7 +34,7 @@ app.use(bodyParser.json());
 // db.on('error', console.error.bind(console, 'MongoDB connection error:'));
 // 
 //    console.log("db object points to the database : "+ mongoose.connections);
-let server = require('http').createServer(app);
+
 
 const session = require('express-session');
 
@@ -35,15 +42,53 @@ const cookie = require('cookie');
 
 var RedisStore = require("connect-redis")(session);
 
-
-
-
-let io = require('socket.io')(server)
 let port = process.env.PORT || 3000;
 
-server.listen(port, () => {
-  console.log('Server listening at port %d', port);
-});
+let server;
+let io;
+
+// SSL Certificate using Let's Encrypt
+// execute using npm start on server
+if (process.env.NODE_ENV === 'production') {
+    console.log("this is production");
+    const privateKey = fs.readFileSync('/etc/letsencrypt/live/circuit-builder.me/privkey.pem', 'utf-8');
+    const certificate = fs.readFileSync('/etc/letsencrypt/live/circuit-builder.me/cert.pem', 'utf-8');
+    const ca = fs.readFileSync('/etc/letsencrypt/live/circuit-builder.me/chain.pem', 'utf-8');
+
+    const credentials = {
+        key: privateKey,
+        cert: certificate,
+        ca: ca
+    };
+
+    // HTTPS connection
+    server = https.createServer(credentials, app).listen(port=443, () => {
+        console.log('HTTPS Server running on port 443');
+    });
+
+    // Re-direct HTTP connection to HTTPS
+    http.createServer(function(req, res) {
+        res.writeHead(301, {"Location": "https://" + req.headers['host'] + req.url });
+        res.end();
+    }).listen(port=80);
+
+    io = require('socket.io')(server)
+
+// execute using node app.js for dev work
+} else {
+    console.log("this is development");
+
+    server = require('http').createServer(app);
+
+    server.listen(port, () => {
+        console.log('Server listening at port %d', port);
+    });
+
+    io = require('socket.io')(server)
+}
+
+
+
 
 // Routing
 app.use(express.static(path.join(__dirname, 'frontend')));
