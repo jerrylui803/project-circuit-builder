@@ -74,7 +74,7 @@ if (process.env.NODE_ENV === 'production') {
 
     io = require('socket.io')(server)
 
-// execute using node app.js for dev work
+    // execute using node app.js for dev work
 } else {
     console.log("this is development");
 
@@ -89,6 +89,7 @@ if (process.env.NODE_ENV === 'production') {
 
 
 
+//app.set("socketio", io)
 
 // Routing
 app.use(express.static(path.join(__dirname, 'frontend')));
@@ -103,8 +104,8 @@ let sessionMiddleware = session({
     //store: new RedisStore({}), // XXX redis server config
     secret: "keyboard cat",
 
-     resave: false,
-     saveUninitialized: true,
+    resave: false,
+    saveUninitialized: true,
 
 });
 
@@ -144,21 +145,21 @@ let MongoClient = require('mongodb').MongoClient;
 let url = "mongodb://localhost:27017/mydb";
 
 MongoClient.connect(url, function(err, db) {
-  if (err) throw err;
-  console.log("Database created!");
-  db.close();
-});
-
-
-MongoClient.connect(url, function(err, db) {
-  if (err) throw err;
-  var dbo = db.db("mydb");
-  dbo.createCollection("customers", function(err, res) {
     if (err) throw err;
-    console.log("Collection created!");
+    console.log("Database created!");
     db.close();
-  });
 });
+
+
+// MongoClient.connect(url, function(err, db) {
+//     if (err) throw err;
+//     var dbo = db.db("mydb");
+//     dbo.createCollection("customers", function(err, res) {
+//         if (err) throw err;
+//         console.log("Collection created!");
+//         db.close();
+//     });
+// });
 
 
 MongoClient.connect(url, function(err, db) {
@@ -170,7 +171,15 @@ MongoClient.connect(url, function(err, db) {
         dbo.createCollection("diagrams", function(err, res) {
             if (err) throw err;
             console.log("Collection diagrams created!");
-            db.close();
+
+            dbo.createCollection("diagramShare", function(err, res) {
+                if (err) throw err;
+                console.log("Collection diagramShare created!");
+                db.close();
+            });
+
+
+
         });
 
 
@@ -178,16 +187,16 @@ MongoClient.connect(url, function(err, db) {
 });
 
 
-MongoClient.connect(url, function(err, db) {
-  if (err) throw err;
-  var dbo = db.db("mydb");
-  var myobj = { name: "Company Inc", address: "Highway 37" };
-  dbo.collection("customers").insertOne(myobj, function(err, res) {
-    if (err) throw err;
-    console.log("1 document inserted");
-    db.close();
-  });
-});
+// MongoClient.connect(url, function(err, db) {
+//     if (err) throw err;
+//     var dbo = db.db("mydb");
+//     var myobj = { name: "Company Inc", address: "Highway 37" };
+//     dbo.collection("customers").insertOne(myobj, function(err, res) {
+//         if (err) throw err;
+//         console.log("1 document inserted");
+//         db.close();
+//     });
+// });
 
 
 
@@ -209,12 +218,6 @@ app.use(function (req, res, next){
 // copied from lecture code: CSCC09/lectures/05/src/todo/
 app.use(function (req, res, next){
     // Checks whether req.session has the field "user"
-    console.log("3333333333333333333333")
-    // if (req.session == null) {
-    //     req.session = {}
-    // }
-     console.log(req.session)
-    console.log("3333333333333333333333 end")
     req.user = ( 'user' in req.session)? req.session.user : null;
     req.username = (req.user)? req.user._id : '';
     let username = (req.user)? req.user._id : '';
@@ -234,45 +237,69 @@ let isAuthenticated = function(req, res, next) {
 
 
 
-// // copied from lecture code: CSCC09/lectures/05/src/todo/
+// If user is not authenticated, then return null,
+// if user is authenticated, then return the username
 let isAuthenticatedSocketIO = function(req) {
 
-    // console.log("AAAAAAAAAAAAAAAAA,,,,,,,WTF is req.session null???")
-    // console.log(req.session == null)
     req.user = (req.session != null && 'user' in req.session)? req.session.user : null;
     req.username = (req.user)? req.user._id : '';
     let username = (req.user)? req.user._id : '';
 
     console.log("this is username", req.username)
-    if (!req.username) return false;
-    else return true;
+    return (req.username)
+    // if (!req.username) return false;
+    // else return true;
 };
 
+
+
+
+let Diagram = function(username, title, canvas) {
+    this.owner = username;
+    this.title = title;
+    this.canvas = canvas;
+};
+
+// the canvas titled 'title' owned by 'owner' is being shared with 'username'
+let Share = function(owner, title, shareUsername) {
+    this.owner = owner;
+    this.title = title;
+    this.shareUsername = shareUsername;
+};
+
+
+
+
+
+// https://stackoverflow.com/questions/35385609/random-chat-with-two-users-at-a-time-socket-io
+// TODO:
+let rooms = {};    // map socket.id => room
+let names = {};    // map socket.id => name
+let allUsers = {}; // map socket.id => socket
 
 
 
 io.on('connection', (socket) => {
 
 
-    console.log("555555555555555")
-    console.log(socket.request.session)
-    let isAuthenticatedBool = isAuthenticatedSocketIO(socket.request)
-    
+    //console.log("555555555555555")
+    //console.log(socket.request.session)
+    let username = isAuthenticatedSocketIO(socket.request)
+
     // console.log(" IS THIS A AUTHENICATED USER????")
     // console.log(isAuthenticatedBool)
 
     // https://stackoverflow.com/questions/33316013/node-js-socket-io-get-cookie-value
-   // var cookief =socket.handshake.headers.cookie;
-   // var cookies = cookie.parse(socket.handshake.headers.cookie);
-   // console.log(cookies);
-    console.log("555555555555555 end")
+    // var cookief =socket.handshake.headers.cookie;
+    // var cookies = cookie.parse(socket.handshake.headers.cookie);
+    // console.log(cookies);
 
-    if (isAuthenticatedBool) {
+    if (username) {
 
         // when the client emits 'upload canvas', this listens and executes
         socket.on('upload canvas', (data1, data2, data3, data4, data5) => {
 
-            console.log("THIS IS THE socket ID: ", socket.id);
+            // console.log("THIS IS THE socket ID: ", socket.id);
             // we tell the client to execute
             // console.log("received everything to redraw canvas")
             // console.log(data1, data2, data3, data4, data5)
@@ -283,7 +310,7 @@ io.on('connection', (socket) => {
             myConnectorID = data5
             let myCanvas = [myGate, myWire, myConnector, myGateID, myConnectorID]; 
             let myCanvasJSON = JSON.stringify(myCanvas);
-            console.log(myCanvasJSON)
+            //console.log(myCanvasJSON)
 
             socket.broadcast.emit('broadcast canvas', {
                 gate: myGate,
@@ -409,6 +436,291 @@ app.get('/signout/', isAuthenticated, function (req, res, next) {
 
 
 
+// new canvas
+// The owner of the canvas is automatically determined based on the cookie
+app.post('/api/canvas/', isAuthenticated, function (req, res, next) {
+    console.log("THIS IS THE USERNAME OF THE USER WHO MADE A NEW CANVAS")
+    console.log(req.user._id);
+    console.log(req.body.title)
+
+    let username = req.user._id;
+    let title = req.body.title;
+    console.log("debug log 222")
+    console.log(username)
+    console.log(title)
+
+    MongoClient.connect(url, function(err, db) {
+        if (err) throw err;
+        let dbo = db.db("mydb");
+        let diagrams = dbo.collection("diagrams");
+
+        diagrams.findOne({owner: username , title: title}, function(err, diagram) {
+            if (err) throw err;
+            if (diagram) return res.status(409).end("username " + username + " already has a diagram titled " + title + ".");
+            else {
+
+                diagrams.insertOne(new Diagram(username, title, ""), function (err, item) {
+                    if (err) return res.status(500).end(err);
+
+
+                    let diagramShare = dbo.collection("diagramShare");
+
+                    diagramShare.insertOne(new Share(username, title, username), function (err, item) {
+                        if (err) return res.status(500).end(err);
+                    });
+
+                    // console.log('broast cast   1')
+                    // TODO: The following does not work!!! Only broadcast1 gets printed
+                    //
+                    // io.on('connection', (socket) => {
+                    //     console.log('broast cast   2')
+                    //     socket.broadcast.emit('broadcast canvas', {
+                    //         gate: null, 
+                    //         wire: null,
+                    //         connector: null,
+                    //         gateID: null,
+                    //         connectorID: null
+                    //     });
+                    //     console.log('broast cast   1')
+                    // });
+                    // return res.json(req.body);
+
+                });
+            }
+        });
+    });
+
+    // images.insert(new Image(req.body, req.user._id, req.file), function (err, item) {
+    //     if (err) return res.status(500).end(err);
+    //     return res.json(req.body);
+    // });
+});
+
+
+
+// return the total number of editable canvas for the current user
+//
+// use the username from the cookie, so no need to explicitely pass the username when
+// using this api
+app.get('/api/size/canvas', isAuthenticated, function (req, res, next) {
+    let username = req.user._id;
+
+    MongoClient.connect(url, function(err, db) {
+        if (err) throw err;
+        let dbo = db.db("mydb");
+        let diagrams = dbo.collection("diagrams");
+
+        diagrams.count({owner: username}, function(err, count) {
+            if (err) {
+                return res.status(500).end(err);
+            } else {
+                return res.json({size: (count)});
+            }
+        });
+    });
+});
+
+
+
+// get several canvas titles
+// Start from the 'startIndex'-th canvas, and return total of 'canvasLength' number of canvas
+app.get('/api/canvas/title/:startIndex/:canvasLength', isAuthenticated, function (req, res, next) {
+    let username = req.user._id;
+    let startIndex = parseInt(req.params.startIndex);
+    let canvasLength = parseInt(req.params.canvasLength);
+
+    MongoClient.connect(url, function(err, db) {
+        if (err) throw err;
+        let dbo = db.db("mydb");
+        let diagrams = dbo.collection("diagrams");
+        let diagramShare = dbo.collection("diagramShare");
+
+
+        //TODO: might need to also store insert time stampt
+        //
+
+        // diagrams.find({username: username}, {hash:0, createdAt:0, updatedAt:0}).sort(
+        //     {createdAt:1}).skip(startIndex).limit(canvasLength).exec(function(err, canvas) {
+        //
+        //
+
+
+        console.log("test1")
+        // diagrams.find({owner: username}, {limit:2} , function(err, canvas){
+        //     console.log("test2");
+        //     console.log(canvas.toArray())
+
+
+
+        //     //if (err) return res.status(500).end(err);
+        //     //console.log("test3")
+        //     //console.log("HERE IS THE mongoDB RESULT")
+        //     //console.log(canvas)
+        //     //   
+        //     //return res.json(canvas);
+        // });
+
+
+
+
+        // diagrams.find().sort({$natural:1}).limit(50).toArray( function(err, canvas){
+        //     console.log(canvas);
+        // });
+
+
+
+        //                              dbo.collection('diagrams').aggregate([
+        //                                  { $lookup:
+        //                                      {
+        //                                          from: 'diagramShare',
+        //                                          localField: 'shareUsername',
+        //                                          foreignField: 'owner',
+        //                                          as: 'owner222'
+        //                                      }
+        //                                  }, 
+        //                                  { $lookup:
+        //                                      {
+        //                                          from: 'diagramShare',
+        //                                          localField: 'title',
+        //                                          foreignField: 'title',
+        //                                          as: 'title222'
+        //                                      }
+        //                                  }
+
+        //                              ]).toArray(function(err, res) {
+        //                                  console.log("CHECK THIS")
+        //                                  console.log(res)
+        //                                  console.log((res[0]).title222)
+
+        //                              });
+
+
+
+
+
+
+
+         diagrams.find().sort({"created_at":1}).skip(startIndex).limit(canvasLength).project({title:1, owner:1, _id:0}).toArray( function(err, canvas){
+             if (err) return res.status(500).end(err);
+             //console.log(canvas);
+             return res.json(canvas)
+         });
+
+    });
+});
+
+
+
+
+
+
+
+// get data for a canvas base on owner and title
+// Also check if the user is authorized to view this canvas
+app.post('/api/canvas/data/:owner/:title', isAuthenticated, function (req, res, next) {
+    let username = req.user._id;
+    // let owner = req.body.owner;
+    // let title = req.body.title;
+    let owner = (req.params.owner);
+    let title = (req.params.title);
+
+    console.log("logging in /api/canvas/data/owner/title")
+    console.log(owner)
+    console.log(title)
+
+
+    MongoClient.connect(url, function(err, db) {
+        if (err) throw err;
+        let dbo = db.db("mydb");
+        let diagrams = dbo.collection("diagrams");
+
+
+        diagrams.findOne({title: title, owner: owner}, function(err, canvas){
+            if (err) return res.status(500).end(err);
+            console.log(canvas);
+            //
+            // TODO: First check if this user (base on cookie) is authorized to access this canvas or not
+
+            let diagramShare = dbo.collection("diagramShare");
+
+            diagramShare.findOne({title: title, owner: owner, shareUsername: username}, function(err, shareWith){
+                if (err) return res.status(500).end(err);
+                if (shareWith) {
+                    return canvas.data
+                } else {
+                    return res.status(500).end("access denied");
+                }
+            });
+
+
+
+            return res.json(canvas)
+        });
+
+    });
+
+});
+
+
+
+
+
+
+app.post('/api/user/share/', isAuthenticated, function (req, res, next) {
+
+
+    let username = req.user._id;
+    let title = req.body.title;
+    let targetUsername = req.body.targetUsername;
+
+
+    console.log("logging info in /api/user/share/, here is the username, title, and the targetUsername")
+    console.log(username)
+    console.log(title)
+    console.log(targetUsername)
+
+
+
+
+    MongoClient.connect(url, function(err, db) {
+        if (err) throw err;
+        let dbo = db.db("mydb");
+        let diagrams = dbo.collection("diagrams");
+
+        // First make sure this user actually is the owner of the canvas that is about to be shared
+        // This will always be true if the user doesn't edit the frontend by themselves
+        diagrams.findOne({owner: username , title: title}, function(err, diagram) {
+
+            if (err) return res.status(500).end(err);
+
+            if (diagram) {
+
+                let diagramShare = dbo.collection("diagramShare");
+
+
+                diagramShare.insertOne(new Share(username, title, targetUsername), function (err, item) {
+                    console.log(err)
+                    console.log(item)
+                    console.log("ALL DONE !!!!!!!!!!!!!!!!!!!")
+
+                    if (err) return res.status(500).end(err);
+
+
+                });
+
+
+            }
+            else {
+                console.log("WHY CAN't I FIND TI?????????")
+            }
+        });
+    });
+
+    // images.insert(new Image(req.body, req.user._id, req.file), function (err, item) {
+    //     if (err) return res.status(500).end(err);
+    //     return res.json(req.body);
+    // });
+});
 
 
 

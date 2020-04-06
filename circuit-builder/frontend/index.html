@@ -8,92 +8,132 @@
         <a href="/login.html" id="signin_button" class="btn header_btn hidden">Sign in or Sign up</a>
         <a href="/signout/" id="signout_button" class="btn header_btn hidden">Sign out</a>
         <title>Canvas</title>
+        <a id="current_user_info"></a>
     </head>
     <body>
-        <div id="downlog">down: </div>
-        <div id="uplog">up: </div>
-        <div id="movelog">move: </div>
-        <div id="outlog">out: </div>
-        <!--<img id="image" src="https://picsum.photos/100/100"/>-->
-        <div class="row">
-            <div class="col"></div>
-            <div class="col">
-                <div class="row">
-                    <img id="NOT-GATE" src="media/NOT.svg"/>
+        <div id="myCanvas" class="hidden">
+            <div id="downlog">down: </div>
+            <div id="uplog">up: </div>
+            <div id="movelog">move: </div>
+            <div id="outlog">out: </div>
+            <!--<img id="image" src="https://picsum.photos/100/100"/>-->
+            <div class="row">
+                <div class="col"></div>
+                <div class="col">
+                    <div class="row">
+                        <img id="NOT-GATE" src="media/NOT.svg"/>
+                    </div>
+                    <div class="row">
+                        <button type="button" class="btn btn-secondary button-not">NOT</button>
+                    </div>
                 </div>
-                <div class="row">
-                    <button type="button" class="btn btn-secondary button-not">NOT</button>
+                <div class="col">
+                    <div class="row">
+                        <img id="AND-GATE" src="media/AND.svg"/>
+                    </div>
+                    <div class="row">
+                        <button type="button" class="btn btn-secondary button-and">AND</button>
+                    </div>
                 </div>
+                <div class="col">
+                    <div class="row">
+                        <img id="NAND-GATE" src="media/NAND.svg"/>
+                    </div>
+                    <div class="row">
+                        <button type="button" class="btn btn-secondary button-nand">NAND</button>
+                    </div>
+                </div>
+                <div class="col">
+                    <div class="row">
+                        <img id="OR-GATE" src="media/OR.svg"/>
+                    </div>
+                    <div class="row">
+                        <button type="button" class="btn btn-secondary button-or">OR</button>
+                    </div>
+                </div>
+                <div class="col">
+                    <div class="row">
+                        <img id="NOR-GATE" src="media/NOR.svg"/>
+                    </div>
+                    <div class="row">
+                        <button type="button" class="btn btn-secondary button-nor">NOR</button>
+                    </div>
+                </div>
+                <div class="col">
+                    <div class="row">
+                        <img id="XOR-GATE" src="media/XOR.svg"/>
+                    </div>
+                    <div class="row">
+                        <button type="button" class="btn btn-secondary button-xor">XOR</button>
+                    </div>
+                </div>
+                <div class="col">
+                    <div class="row">
+                        <img id="XNOR-GATE" src="media/XNOR.svg"/>
+                    </div>
+                    <div class="row">
+                        <button type="button" class="btn btn-secondary button-xnor">XNOR</button>
+                    </div>
+                </div>
+
             </div>
-            <div class="col">
-                <div class="row">
-                    <img id="AND-GATE" src="media/AND.svg"/>
-                </div>
-                <div class="row">
-                    <button type="button" class="btn btn-secondary button-and">AND</button>
-                </div>
+            <div class="form-group">
+                <label for="formControlRange">Simulation Speed (ms)</label>
+                <input type="range" value="10" min="10" max="1000" class="form-control-range" id="slider1">
             </div>
-            <div class="col">
-                <div class="row">
-                    <img id="NAND-GATE" src="media/NAND.svg"/>
+            </br>
+            <!--<button type="button" class="btn btn-primary button-add">Add</button>-->
+            <button type="button" class="btn btn-danger button-remove">remove</button>
+            <button type="button" class="btn btn-success button-move">move</button>
+            <button type="button" class="btn btn-success button-edge">edge</button>
+            wiretype<input type="checkbox" checked data-toggle="toggle" id="wiretype">
+            </br>
+            <canvas id="canvas" class="canvas"></canvas>
+            <script src="https://code.jquery.com/jquery-3.3.1.slim.min.js" integrity="sha384-q8i/X+965DzO0rT7abK41JStQIAqVgRVzpbzo5smXKp4YfRvH+8abtTE1Pi6jizo" crossorigin="anonymous"></script>
+            <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.7/umd/popper.min.js" integrity="sha384-UO2eT0CpHqdSJQ6hJty5KVphtPhzWj9WO1clHTMGa3JDZwrnQq4sF86dIHNDz0W1" crossorigin="anonymous"></script>
+            <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/js/bootstrap.min.js" integrity="sha384-JjSmVgyd0p3pXB1rRibZUAYoIIy6OrQ6VrjIEaFf/nJGzIxFDsf4x0xIM+B07jRM" crossorigin="anonymous"></script>
+            <script src="/socket.io/socket.io.js"></script>
+        </div>
+        <div id="myForms">
+
+            <form class="surround_box hidden" id="new_canvas_form" >
+                <div class="form_title">Add-Canvas Form</div>
+                <input type="text" id="canvas_title" class="form_element" placeholder="canvas title" name="image_title" required/>
+                <!--<input type="file" id="image_file" class="form_element" name="image_file" placeholder="Image Upload" required></textarea>-->
+                <button type="submit" class="btn">Create new canvas </button>
+            </form>
+
+            <div class="surround_box hidden" id="canvas_list">
+                <!-- The list of editable canvas for the current user -->
+                <div id="canvas_list_display">
+                    <div class="btn canvas_owner_btn"> title:myTitle   author:Bob </div>
                 </div>
-                <div class="row">
-                    <button type="button" class="btn btn-secondary button-nand">NAND</button>
-                </div>
-            </div>
-            <div class="col">
-                <div class="row">
-                    <img id="OR-GATE" src="media/OR.svg"/>
-                </div>
-                <div class="row">
-                    <button type="button" class="btn btn-secondary button-or">OR</button>
-                </div>
-            </div>
-            <div class="col">
-                <div class="row">
-                    <img id="NOR-GATE" src="media/NOR.svg"/>
-                </div>
-                <div class="row">
-                    <button type="button" class="btn btn-secondary button-nor">NOR</button>
-                </div>
-            </div>
-            <div class="col">
-                <div class="row">
-                    <img id="XOR-GATE" src="media/XOR.svg"/>
-                </div>
-                <div class="row">
-                    <button type="button" class="btn btn-secondary button-xor">XOR</button>
-                </div>
-            </div>
-            <div class="col">
-                <div class="row">
-                    <img id="XNOR-GATE" src="media/XNOR.svg"/>
-                </div>
-                <div class="row">
-                    <button type="button" class="btn btn-secondary button-xnor">XNOR</button>
-                </div>
+                <div id="canvas_list_navigation">
+                    <div id="gallery_owner_navigation">
+                        <div class="left_right_btn_container">
+                            <div id="left_comment_btn" class="btn small_btn left_btn">Last Page</div>
+                            <div id="right_comment_btn" class="btn small_btn right_btn">Next Page</div>
+                        </div>
+                    </div>
             </div>
 
+            <!-- TODO: THIS FOLLOWING FORM SHOULD ONLY SHOW IF THE CURRENT LOGGED IN USER IS THE OWNER OF THE CURRENT DISPLAY CANVAS!! -->
+            <form class="surround_box hidden" id="share_canvas_form" >
+                <div class="form_title">Share Current Canvas Form</div>
+                <input type="text" id="target_username" class="form_element" placeholder="enter the username to share the current canvas with" name="target_username" required/>
+                <button type="submit" class="btn">share</button>
+            </form>
+
+
+
+
+
+
         </div>
-        <div class="form-group">
-            <label for="formControlRange">Simulation Speed (ms)</label>
-            <input type="range" value="10" min="10" max="1000" class="form-control-range" id="slider1">
-        </div>
-        </br>
-        <!--<button type="button" class="btn btn-primary button-add">Add</button>-->
-        <button type="button" class="btn btn-danger button-remove">remove</button>
-        <button type="button" class="btn btn-success button-move">move</button>
-        <button type="button" class="btn btn-success button-edge">edge</button>
-        wiretype<input type="checkbox" checked data-toggle="toggle" id="wiretype">
-        </br>
-        <canvas id="canvas" class="canvas"></canvas>
-        <script src="https://code.jquery.com/jquery-3.3.1.slim.min.js" integrity="sha384-q8i/X+965DzO0rT7abK41JStQIAqVgRVzpbzo5smXKp4YfRvH+8abtTE1Pi6jizo" crossorigin="anonymous"></script>
-        <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.7/umd/popper.min.js" integrity="sha384-UO2eT0CpHqdSJQ6hJty5KVphtPhzWj9WO1clHTMGa3JDZwrnQq4sF86dIHNDz0W1" crossorigin="anonymous"></script>
-        <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/js/bootstrap.min.js" integrity="sha384-JjSmVgyd0p3pXB1rRibZUAYoIIy6OrQ6VrjIEaFf/nJGzIxFDsf4x0xIM+B07jRM" crossorigin="anonymous"></script>
-        <script src="/socket.io/socket.io.js"></script>
-        <script src="api.js"></script>
-        <script src="index.js"></script>
+
     </body>
+    <script src="api.js"></script>
+    <script src="index.js"></script>
 
 
 </html>
