@@ -51,6 +51,7 @@ let api = (function(){
 
 
     module.signin = function(username, password){
+        //console.log("SHOUDL CALL!#!@#!@#!")
         send("POST", "/signin/", {username, password}, function(err, res){
             if (err) return notifyErrorListeners(err);
             notifySigninListeners(getUsername());
@@ -88,6 +89,8 @@ let api = (function(){
                 return notifyErrorListeners(err);
             } else {
 
+
+                notifyCanvasListListeners();
                 
                 // TODO: now to update canvas listeners?
                 // Don't think we need it here, maybe have to server broadcast over socket io?
@@ -163,11 +166,15 @@ let api = (function(){
 
         let username = getUsername();
 
+        console.log("In getCanvasList!!")
+        console.log(username)
+
+
+
         // If user hasn't login
         if (username === "") {
-            return myHandler(null, "", "");
+            return myHandler(null, "");
         }
-
 
 
         // get the number of editable canvas for the current user.
@@ -186,7 +193,7 @@ let api = (function(){
             }
             // If there are no editable canvas 
             if (canvasListPage === -1) {
-                return myHandler(null, "", "");
+                return myHandler(null, "");
             }
             if (canvasCount != 0) {
                 let startIndex = canvasListPage * canvasListPerPage;
@@ -305,7 +312,7 @@ let api = (function(){
             // console.log(res.owner)
             // console.log(res.canvas)
             // 
-            handler(res.canvas);
+            handler(res.canvas, title, owner);
         });
 
 
@@ -349,7 +356,7 @@ let api = (function(){
             if (!canvas && title && owner) {
                 getCanvasData(title, owner, listener)
             } else if (canvas && !title && !owner){
-                listener(canvas)
+                listener(canvas, title, owner)
             } else {
                 console.log("SOMETHING WENT WRONG IN notifyCanvasListeners")
             }
@@ -359,6 +366,7 @@ let api = (function(){
 
 
     function notifyCanvasListListeners() {
+
         canvasListListeners.forEach(function(listener){
             getCanvasList(listener);
         });

@@ -510,13 +510,60 @@ app.get('/api/size/canvas', isAuthenticated, function (req, res, next) {
         let dbo = db.db("mydb");
         let diagrams = dbo.collection("diagrams");
 
-        diagrams.count({owner: username}, function(err, count) {
+
+
+
+        dbo.collection('diagramShare').aggregate([
+            {$match:
+                {'shareUsername': username}
+            },
+            { $lookup:
+                {
+                    from: "diagrams",
+                    let: { myTitle: "$title", myOwner: "$owner"},
+                    pipeline: [
+                        { $match:
+                            { $expr:
+                                { $and:
+                                    [
+                                        { $eq: [ "$title", "$$myTitle"] },
+                                        { $eq: [ "$owner", "$$myOwner" ] }
+                                    ]
+                                }
+                            }
+                        }
+                    ],
+                    as: "temp"
+                }
+            }
+            ,
+            { $project: { "title": 1, "owner": 1, _id: 0 }},
+            { $count: "myCount"}
+
+        ]).toArray(function(err, count) {
+            console.log("printing in size function")
+            console.log(count)
+
+
             if (err) {
                 return res.status(500).end(err);
             } else {
-                return res.json({size: (count)});
+                if (count[0]) {
+                    return res.json({size: (count[0]).myCount});
+                } else {
+                    return res.json({size: 0})
+                }
             }
+
         });
+
+        // diagrams.count({owner: username}, function(err, count) {
+        //     if (err) {
+        //         return res.status(500).end(err);
+        //     } else {
+        //         return res.json({size: (count)});
+        //     }
+        // });
     });
 });
 
@@ -546,65 +593,82 @@ app.get('/api/canvas/title/:startIndex/:canvasLength', isAuthenticated, function
 
 
         console.log("test1")
-        // diagrams.find({owner: username}, {limit:2} , function(err, canvas){
-        //     console.log("test2");
-        //     console.log(canvas.toArray())
 
 
 
-        //     //if (err) return res.status(500).end(err);
-        //     //console.log("test3")
-        //     //console.log("HERE IS THE mongoDB RESULT")
-        //     //console.log(canvas)
-        //     //   
-        //     //return res.json(canvas);
+
+        // https://kb.objectrocket.com/mongo-db/how-to-use-the-lookup-function-in-mongodb-1277
+
+        dbo.collection('diagramShare').aggregate([
+            {$match:
+                {'shareUsername': username}
+            },
+            { $lookup:
+                {
+                    from: "diagrams",
+                    let: { myTitle: "$title", myOwner: "$owner"},
+                    pipeline: [
+                        { $match:
+                            { $expr:
+                                { $and:
+                                    [
+                                        { $eq: [ "$title", "$$myTitle"] },
+                                        { $eq: [ "$owner", "$$myOwner" ] }
+                                    ]
+                                }
+                            }
+                        }
+                    ],
+                    as: "temp"
+                }
+            }
+            ,
+            { $sort : { owner : 1, title: 1 }},
+            { $skip : startIndex },
+            { $limit: canvasLength},
+            { $project: { "title": 1, "owner": 1, _id: 0 }}
+        ]).toArray(function(err, canvasList) {
+            console.log("CHECK THIS")
+            console.log(typeof(canvasList[0].temp))
+            console.log(canvasList)
+
+            if (err) return res.status(500).end(err);
+            return res.json(canvasList)
+        });
+
+
+        // dbo.collection('diagrams').aggregate([
+        //     { $lookup:
+        //         {
+        //             from: 'diagramShare',
+        //             localField: 'shareUsername',
+        //             foreignField: 'owner',
+        //             as: 'owner222'
+        //         }
+        //     }, 
+        //     { $lookup:
+        //         {
+        //             from: 'diagramShare',
+        //             localField: 'title',
+        //             foreignField: 'title',
+        //             as: 'title222'
+        //         }
+        //     }
+
+        // ]).toArray(function(err, res) {
+        //     console.log("CHECK THIS")
+        //     console.log(res)
+        //     console.log((res[0]).title222)
+        //     console.log((res[0]).owner222)
+
         // });
 
 
-
-
-        // diagrams.find().sort({$natural:1}).limit(50).toArray( function(err, canvas){
-        //     console.log(canvas);
-        // });
-
-
-
-        //                              dbo.collection('diagrams').aggregate([
-        //                                  { $lookup:
-        //                                      {
-        //                                          from: 'diagramShare',
-        //                                          localField: 'shareUsername',
-        //                                          foreignField: 'owner',
-        //                                          as: 'owner222'
-        //                                      }
-        //                                  }, 
-        //                                  { $lookup:
-        //                                      {
-        //                                          from: 'diagramShare',
-        //                                          localField: 'title',
-        //                                          foreignField: 'title',
-        //                                          as: 'title222'
-        //                                      }
-        //                                  }
-
-        //                              ]).toArray(function(err, res) {
-        //                                  console.log("CHECK THIS")
-        //                                  console.log(res)
-        //                                  console.log((res[0]).title222)
-
-        //                              });
-
-
-
-
-
-
-
-         diagrams.find().sort({"created_at":1}).skip(startIndex).limit(canvasLength).project({title:1, owner:1, _id:0}).toArray( function(err, canvas){
-             if (err) return res.status(500).end(err);
-             //console.log(canvas);
-             return res.json(canvas)
-         });
+        //  diagrams.find().sort({"created_at":1}).skip(startIndex).limit(canvasLength).project({title:1, owner:1, _id:0}).toArray( function(err, canvas){
+        //      if (err) return res.status(500).end(err);
+        //      //console.log(canvas);
+        //      return res.json(canvas)
+        //  });
 
     });
 });

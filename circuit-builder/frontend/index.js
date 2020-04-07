@@ -848,7 +848,26 @@
     }
 
 
-    api.onCanvasUpdate(function (myCanvas) {
+    api.onCanvasUpdate(function (myCanvas, title, owner) {
+
+
+
+        document.querySelector('#current_canvas_info').innerHTML = '';
+
+        let elmt = document.createElement('a');
+        elmt.className = "sub_header";
+        elmt.innerHTML = `
+                 <div>currently viewing    owner: ${owner}    title:${title}</div>
+                 `;
+
+        // add this element to the document
+        document.getElementById("current_canvas_info").prepend(elmt);
+
+
+
+
+
+
         connectorID = 0;
         gateID = 0;
 
