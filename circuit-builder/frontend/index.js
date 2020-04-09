@@ -156,4 +156,371 @@ $(document).ready(function(){
         //console.log($("#slider1").val());
     });
 
+
+    api.onCanvasUpdate(function (myCanvas, title, owner) {
+
+        document.querySelector('#current_canvas_info').innerHTML = '';
+
+        let elmt = document.createElement('a');
+        elmt.className = "sub_header";
+        elmt.innerHTML = `
+                 <div>currently viewing    owner: ${owner}    title:${title}</div>
+                 `;
+
+        // add this element to the document
+        document.getElementById("current_canvas_info").prepend(elmt);
+
+
+
+        return;
+
+        //TODO_2: you can remove the code for the rest of this function, and just take myCanvas as a string to
+        //        update the entire canvas
+        connectorID = 0;
+        gateID = 0;
+
+        console.log("CANVAS: ", myCanvas);
+
+        c.clearRect(0, 0, canvas.width, canvas.height);
+
+        // empty out each gate's input and output
+        for (let x in gates) {
+            gates.input = [];
+            gates.output = null;
+        }
+
+        // clear past configurations
+        gates = [];
+        wires = [];
+        connectors = {};
+        gateHandler.hover = null;
+        gateHandler.placed = false;
+        gateHandler.moving = null;
+
+        // re-create all the connectors
+        for (key in myCanvas.connector) {
+            let currConnector = myCanvas.connector[key];
+            let myConnector = new Connector(
+                currConnector.x,
+                currConnector.y,
+                currConnector.type,
+                currConnector.value,
+                currConnector.gateID,
+                currConnector.placed,
+                currConnector.connected,
+                currConnector.gateID,
+                currConnector.connectorID);
+            connectors[currConnector.connectorID] = myConnector;
+        }
+
+        // re-draw all the gates
+        if (myCanvas.gate) {
+
+            // loop through all gates and instantiate them again
+            for(let i = 0; i < myCanvas.gate.length; i++){
+                let currGate = myCanvas.gate[i];
+
+                let myGate = new LogicGate(
+                    currGate.type,
+                    currGate.width,
+                    currGate.height,
+                    currGate.valX,
+                    currGate.valY,
+                    currGate.input,
+                    currGate.output,
+                    currGate.placed,
+                    currGate.x,
+                    currGate.y,
+                    currGate.dx,
+                    currGate.dy);
+
+                myGate.draw();
+                gates.push(myGate);
+            }
+        }
+
+
+        // re-draw all the wires
+        if (myCanvas.wire) {
+
+            for(let i = 0; i < myCanvas.wire.length; i++){
+                let currWire = myCanvas.wire[i];
+                let startConnectorID = currWire.start.connectorID
+                let endConnectorID = currWire.end.connectorID
+
+                let startConnector;
+                let endConnector;
+
+                // for each connector, match its connector info with wire info
+                for(let key in connectors){
+                    if (connectors.hasOwnProperty(key)) {           
+                        let currConnectorID = connectors[key].connectorID;
+                        if (currConnectorID == startConnectorID) {
+                            startConnector = connectors[key];
+                        } else if (currConnectorID == endConnectorID) {
+                            endConnector = connectors[key];
+                        }
+                    }
+                }
+
+                // instantiate the Wire
+                let myWire = new Wire(
+                    startConnector,
+                    endConnector,
+                    currWire.value,
+                    currWire.nodes);
+
+
+                // draw the Wire
+                myWire.draw();
+                wires.push(myWire);
+
+            }
+        }
+
+        //draw the connectors back again
+        for(let key in connectors){
+            if (connectors.hasOwnProperty(key)) {           
+                connectors[key].draw();
+            }
+        }
+
+
+        // set the current connectorID and gateID
+        connectorID = myCanvas.connectorID;
+        gateID = myCanvas.gateID;
+
+
+        console.log("GATEID: ", gateID);
+        console.log("CONID: ", connectorID);
+        console.log(myCanvas.gate)
+        console.log(myCanvas.connector)
+
+    });
+
+
+
+
+
+
+
+    // ---------------------------- The rest of the files are not for the canvas --------------------------------
+
+    // For the signin/signup, signout buttons
+    let username = api.getUsername();
+    // let currCanvasTitle = null;
+    // let currCanvasOwner = null;
+    console.log("HERE IS THE USERNAME")
+    console.log(username)
+    if (username) {
+        document.querySelector('#signout_button').classList.remove('hidden');
+        //document.querySelector('#new_image_form_and_hide_btn').classList.remove('hidden');
+        //document.querySelector('#canvas').classList.remove('hidden');
+        document.querySelector('#new_canvas_form').classList.remove('hidden');
+        document.querySelector('#canvas_list').classList.remove('hidden');
+
+        // TODO: add check: if the current canvas is owned by the current user then remove hidden from "new_canvas_form"
+        
+
+    } else {
+        document.querySelector('#signin_button').classList.remove('hidden');
+    }
+
+    document.getElementById('new_canvas_form').addEventListener('submit', function (e) {
+        // prevent from refreshing the page on submit
+        e.preventDefault();
+        // read form elements
+        let title = document.getElementById("canvas_title").value;
+
+        // clean form
+        document.getElementById("new_canvas_form").reset();
+        api.addCanvas(title);
+
+        let currCanvasTitle = api.getCurrCanvasTitle;
+        // If we are currently not displaying a canvas
+        if (!currCanvasTitle) { // Note that currCanvasOwner in api.js should necessarily not be null
+            // then switch to the newly created canvas and display the canvas
+            api.switchCanvas(username, title);
+            document.querySelector('#myCanvas').classList.remove('hidden');
+
+
+
+            // TODO: DOUBLE CHECK THIS
+            document.querySelector('#share_canvas_form').classList.remove('hidden');
+
+        }
+    });
+
+
+
+    document.getElementById('share_canvas_form').addEventListener('submit', function (e) {
+        // prevent from refreshing the page on submit
+        e.preventDefault();
+        // read form elements
+        let target_username = document.getElementById("target_username").value;
+
+        // clean form
+        document.getElementById("share_canvas_form").reset();
+        api.addShareUser(target_username);
+
+
+        // TODO: Add any function later to update the target user's interface
+        //
+        // I think there is no need to do any addition update on the current user's front end
+
+
+    });
+
+
+
+
+    api.onCanvasListUpdate(function (items, signedInUser ) {
+        console.log("ON CANVAS LIST UPDATE LOGGING")
+        console.log(items)
+        console.log(signedInUser)
+
+        document.querySelector('#canvas_list_display').innerHTML = '';
+        document.querySelector('#canvas_list_navigation').innerHTML = '';
+        document.querySelector("#current_user_info").innerHTML = '';
+
+        // Either tell user to sign in, or display current username (and gallery currently displayed)
+        let elmtUserInfo = document.createElement('a');
+        elmtUserInfo.className = "sub_header";
+
+        if (signedInUser) {
+            elmtUserInfo.innerHTML = `
+                    <div>Signed in as:             ${signedInUser}</div>
+                    `;
+
+                    // <div>Viewing gallery owned by: ${displayGalleryOwner}</div>
+                    // `;
+        } else {
+            elmtUserInfo.innerHTML = `
+                <div>Please sign in to continue
+                `;
+        }
+        document.getElementById("current_user_info").prepend(elmtUserInfo);
+
+        if (items == null || items.length === 0) {
+            return;
+        }
+
+        let left_btn = items[0].left_btn;
+        let right_btn = items[0].right_btn;
+
+        items.forEach(function (item) {
+
+            // owner of the canvas
+            let owner = item.owner;
+            let title = item.title;
+
+            // create a new user element
+            let elmt = document.createElement('div');
+            elmt.className = "btn gallery_owner_btn";
+            elmt.innerHTML = `
+                 <div>owner: ${owner}    title:${title}</div>
+                 `;
+
+            // add this element to the document
+            document.getElementById("canvas_list_display").prepend(elmt);
+
+            elmt.addEventListener('click', function(e) {
+                // document.querySelector("#current_user_info").innerHTML = '';
+
+                // // create a new user element
+                // let elmtUserInfo = document.createElement('a');
+                // elmtUserInfo.className = "sub_header";
+                // elmtUserInfo.innerHTML = `
+                // <div>Signed in as: ${signedInUser}</div>
+                // <div>Viewing gallery owned by: ${author}</div>
+                // `;
+                // document.getElementById("current_user_info").prepend(elmtUserInfo);
+                //
+                api.switchCanvas(owner, title);
+
+                document.querySelector('#myCanvas').classList.remove('hidden');
+
+                // console.log("WTF")
+                // console.log(api.getCurrCanvasOwner)
+                // console.log(api.aaa222)
+                // console.log(api.currUserIsCanvasOwner)
+
+                console.log("CCCCCCCCCCCCCCCC")
+                console.log(api.getUsername())
+
+                if (owner == api.getUsername()) {
+                    document.querySelector('#share_canvas_form').classList.remove('hidden');
+                }
+
+
+                // TODO: check if the following code is really needed
+                //       If we are not reloading the whole page, we might not need to
+                //       re-remove the 'hidden' class
+
+                // let currCanvasTitle = api.getCurrCanvasTitle;
+                // // If we are currently not displaying a canvas
+                // if (!currCanvasTitle) { // Note that currCanvasOwner in api.js should necessarily not be null
+                //     // then switch to the newly created canvas and display the canvas
+                //     api.switchCanvas(username, title);
+                //     document.querySelector('#myCanvas').classList.remove('hidden');
+
+                //     let currCanvasOwner = api.getCurrCanvasOwner;
+                //     console.log("currCanvasOwner")
+                //     console.log(currCanvasOwner)
+
+                //     if (api.currUserIsCanvasOwner) {
+                //         document.querySelector('#share_canvas_form').classList.remove('hidden');
+                //     }
+
+
+                // }
+
+
+            });
+        });
+
+        // Not needed for canvas list
+        // // Hide the add-image form as it might be confusing to show add-image form when the user
+        // // is viewing a different person's gallery
+        // // (the backend does not care, since the backend will only look at the sessionId to determine
+        // // who is adding the image)
+        // if (signedInUser !== displayGalleryOwner) {
+        //     document.getElementById("new_image_form_and_hide_btn").style.visibility = "hidden";
+        //     let x = document.getElementById("new_image_form");
+        //     x.style.display = "none";
+        // } else {
+        //     document.getElementById("new_image_form_and_hide_btn").style.visibility = "";
+        //     let x = document.getElementById("new_image_form");
+        //     x.style.display = "";
+        // }
+
+
+        // create a new element for the navigation buttons
+        let elmtNavigation = document.createElement('div');
+        elmtNavigation.innerHTML = `
+            <div class="left_right_btn_container">
+                <div id="left_user_btn" class="btn small_btn left_btn">Last Page</div>
+                <div id="right_user_btn" class="btn small_btn right_btn">Next Page</div>
+            </div>
+            `;
+
+        if (!left_btn) {
+            elmtNavigation.querySelector('#left_user_btn').style.visibility = "hidden";
+        }
+        if (!right_btn) {
+            elmtNavigation.querySelector('#right_user_btn').style.visibility = "hidden";
+        }
+        elmtNavigation.querySelector('#left_user_btn').addEventListener('click', function (e) {
+            api.getLeftUser();
+        });
+        elmtNavigation.querySelector('#right_user_btn').addEventListener('click', function (e) {
+            api.getRightUser();
+        });
+        document.getElementById("canvas_list_navigation").prepend(elmtNavigation);
+
+
+
+   });
+
+
 });
