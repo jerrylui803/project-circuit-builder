@@ -9,17 +9,32 @@
         <a href="/signout/" id="signout_button" class="btn header_btn hidden">Sign out</a>
         <title>Canvas</title>
         <a id="current_user_info"></a>
-        <a id="current_canvas_info"></a>
     </head>
     <body>
-        <div id="myCanvas" class="hidden">
+        <div id="myCanvas">
             <div id="downlog">down: </div>
             <div id="uplog">up: </div>
             <div id="movelog">move: </div>
             <div id="outlog">out: </div>
             <!--<img id="image" src="https://picsum.photos/100/100"/>-->
             <div class="row">
-                <div class="col"></div>
+                <!--<div class="col"></div>-->
+                <div class="col">
+                    <div class="row">
+                        <img id="INPUT" src="media/LogicInput.svg"/>
+                    </div>
+                    <div class="row">
+                        <button type="button" class="btn btn-primary button-in">INPUT</button>
+                    </div>
+                </div>
+                <div class="col">
+                    <div class="row">
+                        <img id="OUTPUT" src="media/LogicOutput.svg"/>
+                    </div>
+                    <div class="row">
+                        <button type="button" class="btn btn-primary button-out">OUTPUT</button>
+                    </div>
+                </div>
                 <div class="col">
                     <div class="row">
                         <img id="NOT-GATE" src="media/NOT.svg"/>
@@ -80,7 +95,7 @@
             </div>
             <div class="form-group">
                 <label for="formControlRange">Simulation Speed (ms)</label>
-                <input type="range" value="10" min="10" max="1000" class="form-control-range" id="slider1">
+                <input type="range" value="10" min="1" max="100" class="form-control-range" id="slider1">
             </div>
             </br>
             <!--<button type="button" class="btn btn-primary button-add">Add</button>-->
@@ -134,7 +149,6 @@
 
     </body>
     <script src="api.js"></script>
-    <script src="index.js"></script>
-
+    <script type="module" src="index.js"></script>
 
 </html>
