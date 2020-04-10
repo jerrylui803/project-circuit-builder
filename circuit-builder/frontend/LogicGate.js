@@ -16,6 +16,7 @@ export class GateHandler{
         for(let key in this.components){
             delete this.components[key];
         }
+        let hover = state.hover;
         //ignore hover and moving for now
         //create any new components not seen before
         let gates = state.gates;
@@ -35,7 +36,13 @@ export class GateHandler{
             newGate.setInputs(ins);
             newGate.setOutput(this.connectors[output]);
             newGate.updatePosition(x,y);
-            newGate.setPlaced(true);
+            if(newGate.getID() == hover){
+               newGate.setPlaced(false); 
+            }
+            else{
+                newGate.setPlaced(true);
+            }
+            
             this.components[id] = newGate;
             
                 //set inputs and output connectors

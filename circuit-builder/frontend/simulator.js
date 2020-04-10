@@ -34,6 +34,8 @@ export class Simulator{
 
         this.gateHandler.updateState(state.gateHandler);
 
+        this.wireHandler.updateState(state.wireHandler);
+
         console.log("updating sim canvas");
     }
 

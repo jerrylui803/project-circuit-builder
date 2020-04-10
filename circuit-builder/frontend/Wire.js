@@ -10,26 +10,41 @@ export class WireHandler{
         this.hover = null;
         this.drawing = false;
     }
-
     updateState(state){
+        for(let key in this.wires){
+            delete this.wires[key];
+        }
+        let hover = state.hover;
+        //ignore hover and moving for now
+        //create any new components not seen before
         let wires = state.wires;
         for(let i = 0; i < wires.length; i++){
             let id = wires[i].id;
-            let gateid = wires[i].gateid;
-            let x = wires[i].x;
-            let y = wires[i].y;
-            let dx = wires[i].dx;
-            let dy = wires[i].dy;
-            let type = wires[i].type;
-            let value = wires[i].value;
-            let size = wires[i].size;
-            if(!this.wires[id]){
-                //id,gateID,type,init,size,offsetX,offsetY
-                let newConnector = new Connector(id,gateid,type,value,size,dx,dy);
-                newConnector.setPlaced(true);
+            let start = wires[i].start;
+            let end = wires[i].end;
+            let x = wires[i].startx;
+            let y = wires[i].starty;
+            if(!start || !end){
+                // let b;
+                // if(start){
+                //     let newWire = newWire(id,start,null);
+                // }
+                // else{
+                //     let newWire = newWire(id,null,end);
+                // }
+
             }
+            else{
+                let newWire = new Wire(id,this.connectors[start],this.connectors[end]);
+                this.wires[id] = newWire;
+            }
+            
         }
+
+        
+
     }
+
 
     getJSON(){
         let output = {};
@@ -248,6 +263,9 @@ export class Wire{
 
     getEnd(){
         return this.end;
+    }
+    setStart(start){
+        this.start = start;
     }
 
     updateValue(){
