@@ -7,7 +7,28 @@ export class ConnectorHandler{
     }
 
     updateState(state){
+        for(let key in this.connectors){
+            delete this.connectors[key];
+        }
         let connectors = state.connectors;
+        for(let i = 0; i < connectors.length; i++){
+            let id = connectors[i].id;
+            let gateid = connectors[i].gateid;
+            let x = connectors[i].x;
+            let y = connectors[i].y;
+            let dx = connectors[i].dx;
+            let dy = connectors[i].dy;
+            let type = connectors[i].type;
+            let value = connectors[i].value;
+            let size = connectors[i].size;
+            //if(!this.connectors[id]){
+            //id,gateID,type,init,size,offsetX,offsetY
+            let newConnector = new Connector(id,gateid,type,value,size,dx,dy);
+            newConnector.updatePosition(x,y);
+            newConnector.setPlaced(true);
+            this.connectors[id] = newConnector;
+            //}
+        }
     }
 
     getJSON(){
@@ -18,12 +39,14 @@ export class ConnectorHandler{
                 let curr = this.connectors[key];
                 let connector = {};
                 connector["id"] = curr.getID();
+                connector["gateid"] = curr.getGateID();
                 connector["x"] = Math.round((curr.getX()+Number.EPSILON)*1000)/1000;
                 connector["y"] = Math.round((curr.getY()+Number.EPSILON)*1000)/1000;
                 connector["dx"] = curr.getOffsetX();
                 connector["dy"] = curr.getOffsetY();
                 connector["type"] = curr.getType();
                 connector["value"] = curr.getValue();
+                connector["size"] = curr.getSize();
                 connectors.push(connector);
             }
         }
@@ -88,6 +111,9 @@ export class Connector{
         this.wires = [];
         this.toDelete = false;
         this.gateID = gateID;
+    }
+    getSize(){
+        return this.d;
     }
 
     getGateID(){

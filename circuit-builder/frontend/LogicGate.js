@@ -13,21 +13,37 @@ export class GateHandler{
     }
 
     updateState(state){
+        for(let key in this.components){
+            delete this.components[key];
+        }
         //ignore hover and moving for now
         //create any new components not seen before
         let gates = state.gates;
         for(let i = 0; i < gates.length; i++){
-                let id = gates[key].id;
-                let x = gates[key].x;
-                let y = gates[key].y;
-                let type = gates[key].type;
-                if(!this.components[id]){
-                    let newGate = new LogicGate(id,type,this.images[type]);
-                    newGate.movePosition(x,y);
-                    //this is a new gate never before seen, add it
-                }
+            let id = gates[i].id;
+            let x = gates[i].x;
+            let y = gates[i].y;
+            let type = gates[i].type;
+            let inputs = gates[i].inputs;
+            let output = gates[i].output;
+            //if(!this.components[id]){
+            let newGate = new LogicGate(id,type,this.images[type]);
+            let ins = [];
+            for(let x = 0; x < inputs.length; x++){
+                ins.push(this.connectors[inputs[x]]);
             }
+            newGate.setInputs(ins);
+            newGate.setOutput(this.connectors[output]);
+            newGate.updatePosition(x,y);
+            newGate.setPlaced(true);
+            this.components[id] = newGate;
+            
+                //set inputs and output connectors
+
+                //this is a new gate never before seen, add it
+            //}
         }
+        
 
     }
 
@@ -51,8 +67,8 @@ export class GateHandler{
                 for(let i = 0 ; i < inputs.length; i++){
                     connectors.push(inputs[i].getID());
                 }
-                connectors.push(outputs.getID());
-                gate["connectors"] = connectors;
+                gate["output"] = outputs.getID();
+                gate["inputs"] = connectors;
                 components.push(gate);
             }
         }

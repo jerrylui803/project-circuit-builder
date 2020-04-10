@@ -30,6 +30,8 @@ export class Simulator{
         // let connHandler = state.connHandler;
 
         this.connHandler.updateState(state.connHandler);
+
+
         this.gateHandler.updateState(state.gateHandler);
 
         console.log("updating sim canvas");
@@ -93,6 +95,7 @@ export class Simulator{
     }
 
     handleMouseOut(x,y,dx,dy){
+        console.log(this.connectors);
         this.gateHandler.handleMouseOut(x,y);
         this.portHandler.handleMouseOut(x,y);
         this.updateCanvas(x,y);

@@ -11,6 +11,26 @@ export class WireHandler{
         this.drawing = false;
     }
 
+    updateState(state){
+        let wires = state.wires;
+        for(let i = 0; i < wires.length; i++){
+            let id = wires[i].id;
+            let gateid = wires[i].gateid;
+            let x = wires[i].x;
+            let y = wires[i].y;
+            let dx = wires[i].dx;
+            let dy = wires[i].dy;
+            let type = wires[i].type;
+            let value = wires[i].value;
+            let size = wires[i].size;
+            if(!this.wires[id]){
+                //id,gateID,type,init,size,offsetX,offsetY
+                let newConnector = new Connector(id,gateid,type,value,size,dx,dy);
+                newConnector.setPlaced(true);
+            }
+        }
+    }
+
     getJSON(){
         let output = {};
         //The hover and drawing of this user
