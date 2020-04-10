@@ -296,38 +296,52 @@ io.on('connection', (socket) => {
     if (username) {
 
         // when the client emits 'upload canvas', this listens and executes
-        socket.on('upload canvas', (data1, data2, data3, data4, data5) => {
+        socket.on('upload canvas', (myCanvas) => {
 
-            // console.log("THIS IS THE socket ID: ", socket.id);
-            // we tell the client to execute
-            // console.log("received everything to redraw canvas")
-            // console.log(data1, data2, data3, data4, data5)
-            myGate = data1;
-            myWire = data2;
-            myConnector = data3;
-            myGateID = data4
-            myConnectorID = data5
-            let myCanvas = [myGate, myWire, myConnector, myGateID, myConnectorID]; 
-            let myCanvasJSON = JSON.stringify(myCanvas);
-            //console.log(myCanvasJSON)
+            //sanity check
+            if (names[socket.id] == null || !(names[socket.id] === username)) {
+                console.log("something went wrong in socketio upload canvas")
+            }
 
-            socket.broadcast.emit('broadcast canvas', {
-                gate: myGate,
-                wire: myWire,
-                connector: myConnector,
-                gateID: myGateID,
-                connectorID: myConnectorID
+            let room = rooms[socket.id]
+
+            if (!room) {
+                console.log("something went wrong. this user hasn't select which canvas to update (this should not be possible)")
+            }
+
+            let roomInfo = room.split('#');
+
+            owner = roomInfo[0];
+            title = roomInfo[0];
+
+            // No need to do additional checks for whether this user is allowed to modify this canvas or not,
+            // because we have the socketID
+            
+            MongoClient.connect(url, function(err, db) {
+                if (err) throw err;
+                let dbo = db.db("mydb");
+                let diagrams = dbo.collection("diagrams");
+
+                // store this update to the canvas into the database
+                diagrams.update({owner: owner, title: title},{canvas: myCanvas}, {upsert: true}, function(err){
+
+                    if (err) {
+                        console.log(err);
+                        io.to(socket.id).emit(err);
+                    }
+
+                    // Now tell everyone in this room to update their canvas
+                    socket.broadcast.to(room).emit('broadcast canvas', myCanvas);
+
+                });
             });
-
-
-            //            socket.emit('chat start', {'name': names[peer.id], 'room':room});
         });
+
 
 
         socket.on('switch canvas', (owner, title) => {
 
             console.log("SOCKET SWITCH CANVAS IS NOT IMPLEMENTED")
-            return ;
 
             //TODO: IMPLEMENT THIS 
 
@@ -342,58 +356,68 @@ io.on('connection', (socket) => {
                 let diagramShare = dbo.collection("diagramShare");
 
                 diagramShare.findOne({title: title, owner: owner, shareUsername: username}, function(err, shareWith){
-                    if (err) return res.status(500).end(err);
+                    // if (err) return res.status(500).end(err);
+                    if (err) {
+                        console.log(err);
+                        io.to(socket.id).emit(err);
+                    }
+
                     if (shareWith) {
-                        // This user is allow to switch to this canvas, record that.
-                        // send future updates to this canvas to this user
-                        //
+                        // This user is allow to switch to this canvas, record the socket id,
+                        // and send future updates to this canvas to this user 
+
+                        // First check if this user was in some other room. If so, then remove this 
+                        // user from the previous room first
+                        if (rooms[socket.id]) {
+
+                            if (!allUsers[socket.id]) {
+                                console.log("SOMETHING WENT WRONG!!! THIS USER JOINED A ROOM BUT WE DONT KNOW THE USERNAME")
+                            }
+
+                            let prevRoom = rooms[socket.id];
+                            socket.leave(prevRoom);
+
+                            // clean up (even though we are over writing immediately after)
+                            rooms[socket.id] = null;
+                            allUsers[socket.id] = null;
+                        }
+
+                        
                         names[socket.id] = username;
 
-                        allUsers[socket.id] = socket;
-
                         // TODO: add check to owner and title that it cannot contain the special character '#'
-
+                        allUsers[socket.id] = socket;
                         let room = owner + '#' + title;
-
                         socket.join(room);
-
                         // register rooms to their names
                         rooms[socket.id] = room;
 
+                        let diagrams = dbo.collection("diagram");
 
-                        //    //     findPeerForLoneSocket(socket);
+                        diagrams.findOne({owner: owner , title: title}, function(err, diagram) {
+                            if (err) throw err;
+                            else {
 
-                        //    var findPeerForLoneSocket = function(socket) {
-                        //        // this is place for possibly some extensive logic
-                        //        // which can involve preventing two people pairing multiple times
-                        //        if (queue) {
-                        //            // somebody is in queue, pair them!
-                        //            var peer = queue.pop();
-                        //            var room = socket.id + '#' + peer.id;
-                        //            // join them both
-                        //            peer.join(room);
-                        //            socket.join(room);
-                        //            // register rooms to their names
-                        //            rooms[peer.id] = room;
-                        //            rooms[socket.id] = room;
-                        //            // exchange names between the two of them and start the chat
-                        //            peer.emit('chat start', {'name': names[socket.id], 'room':room});
-                        //            socket.emit('chat start', {'name': names[peer.id], 'room':room});
-                        //        } else {
-                        //            // queue is empty, add our lone socket
-                        //            queue.push(socket);
-                        //        }
-                        //    }
+                                diagrams.insertOne(new Diagram(username, title, ""), function (err, item) {
+                                    if (err) {
+                                        io.to(socket.id).emit(err);
+                                    } else {
+                                        console.log("Found the canvas , about to return the canvas through socketio, logging the canvas(string)")
+                                        console.log(diagram.canvas)
+                                        io.to(socket.id).emit(diagram.canvas);
+                                    }
+                                })
+                            }
+                        })
 
-
-                        return canvas.data
                     } else {
-                        return res.status(500).end("access denied. You are not allowed to switch to this canvas");
+                        // return res.status(500).end("access denied. You are not allowed to switch to this canvas");
+                        console.log("access denied. You are not allowed to switch to this canvas");
+                        io.to(socket.id).emit("access denied. You are not allowed to switch to this canvas");
                     }
                 });
 
             });
-
         });
 
     } else {
@@ -700,9 +724,9 @@ app.get('/api/canvas/title/:startIndex/:canvasLength', isAuthenticated, function
             { $limit: canvasLength},
             { $project: { "title": 1, "owner": 1, _id: 0 }}
         ]).toArray(function(err, canvasList) {
-            console.log("CHECK THIS")
-            console.log(typeof(canvasList[0].temp))
-            console.log(canvasList)
+            // console.log("CHECK THIS")
+            // console.log(typeof(canvasList[0].temp))
+            // console.log(canvasList)
 
             if (err) return res.status(500).end(err);
             return res.json(canvasList)
