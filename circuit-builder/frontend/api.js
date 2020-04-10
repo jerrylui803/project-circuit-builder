@@ -56,8 +56,6 @@ let api = (function(){
     socket.on('broadcast canvas', (data) => {
         console.log("Got a SocketIO broadcase canvas from backend")
         console.log(data)
-        
-        console.log()
         console.log()
         notifyCanvasListeners(null, null, data);
 
@@ -218,7 +216,7 @@ let api = (function(){
                         return notifyErrorListeners(err);
                     }
 
-                    ret = res;
+                    let let ret = res;
                     ret[0].left_btn = false;
                     ret[0].right_btn = false;
                     if (startIndex > 0) {
