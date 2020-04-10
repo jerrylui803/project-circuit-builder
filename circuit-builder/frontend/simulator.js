@@ -27,6 +27,21 @@ export class Simulator{
     }
 
     updateState(state){
+        let test = state;
+        let x1 = test.connHandler;
+        let x2 = test.wireHandler;
+        let x3 = test.gateHandler;
+        let x4 = test.portHandler;
+        if(x1 && x2 && x3 && x4){
+            console.log("NIGGAAAA",x1,x2,x3,x4);
+            this.connHandler.updateState(test.connHandler);
+            this.wireHandler.updateState(test.wireHandler);
+            this.gateHandler.updateState(test.gateHandler);
+            this.portHandler.updateState(test.portHandler);
+            this.updateCanvas(x,y);
+            return;
+        }
+
         let action = state.action;
         let x = state.x;
         let y = state.y;

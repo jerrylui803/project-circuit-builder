@@ -340,37 +340,30 @@ io.on('connection', (socket) => {
                         console.log(err);
                         io.to(socket.id).emit(err);
                     }
-                    console.log("WHY IS IT NULL")
-                    console.log(owner)
-                    console.log(title)
-                    console.log(item)
+                    // console.log("WHY IS IT NULL")
+                    // console.log(owner)
+                    // console.log(title)
+                    // console.log(item)
 
-                    item['canvas'] = myCanvas;
+                    if(myCanvas.action == "ADD"){
+                        console.log("saving canvas");
+                        item['canvas'] = myCanvas.object;
+                        
+                        // Save the item with the additional field
+                        diagrams.save(item, {w: 1}, function(err, result) {
 
-                    // Save the item with the additional field
-                    diagrams.save(item, {w: 1}, function(err, result) {
+                            if (err) {
+                                console.log(err);
+                                io.to(socket.id).emit(err);
+                            }
+                            // Now tell everyone in this room to update their canvas
+                            socket.broadcast.to(room).emit('broadcast canvas', myCanvas);
 
-                        if (err) {
-                            console.log(err);
-                            io.to(socket.id).emit(err);
-                        }
-
-                        // Now tell everyone in this room to update their canvas
+                        });
+                    }
+                    else{
                         socket.broadcast.to(room).emit('broadcast canvas', myCanvas);
-
-
-
-
-
-
-
-
-
-
-
-
-
-                    });
+                    }
 
 
 
