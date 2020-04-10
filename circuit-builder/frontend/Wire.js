@@ -9,8 +9,41 @@ export class WireHandler{
         this.wires = wires;
         this.hover = null;
         this.drawing = false;
-        this.invalid = null;
     }
+
+    getJSON(){
+        let output = {};
+        //The hover and drawing of this user
+        output["hover"] = this.hover;
+        output["drawing"] = this.drawing;
+        let wires = [];
+        for(let key in this.wires){
+            if(this.wires.hasOwnProperty(key)){
+                let curr = this.wires[key];
+                let wire = {};
+                wire["id"] = curr.getID();
+                if(curr.getStart() && curr.getEnd()){
+                    wire["start"] = curr.getStart().getID();
+                    wire["end"] = curr.getEnd().getID();
+                }
+                else{
+                    //the wire is being hovered
+                    wire["startx"] = curr.getX();
+                    wire["starty"] = curr.getY();
+                    if(curr.getStart()){
+                        wire["end"] = curr.getStart().getID();
+                    }
+                    else{
+                        wire["end"] = curr.getEnd().getID();
+                    }
+                }
+                wires.push(wire);
+            }
+        }
+        output["wires"] = wires;
+        return output;
+    }
+
     //Checks if a wire can be started from this connection
     //A wire can be started iff:
     //the connector is an output type
@@ -176,9 +209,16 @@ export class Wire{
         this.nodes = [];
         this.nodes.push(new Node(x,y));
         this.nodes.push(new Node(x,y));
+        this.hx = -1;
+        this.hy = -1;
         
     }
-
+    getX(){
+        return this.hx;
+    }
+    getY(){
+        return this.hy;
+    }
     getID(){
         return this.id;
     }
@@ -269,6 +309,12 @@ export class Wire{
         // this.nodes[1].y = y2;
 
     }
+    updateHover(x,y){
+        if(!this.start || !this.end){
+            this.hx = x;
+            this.hy = y;
+        }
+    }
 
     draw(c,x,y){
         c.strokeStyle = "black";
@@ -280,6 +326,7 @@ export class Wire{
             c.globalAlpha = 1.0;
         }
         let x1, x2, y1, y2;
+        this.updateHover(x,y);
         if(this.start && !this.end){
             x1 = this.start.getX();
             y1 = this.start.getY();

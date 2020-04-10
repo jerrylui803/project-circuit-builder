@@ -1,5 +1,77 @@
 import {CONNECTOR,GATE,PORT,TOOL} from "./Enumeration.js";
 
+export class ConnectorHandler{
+    constructor(connectors,wires){
+        this.connectors = connectors;
+        this.wires = wires;
+    }
+
+    updateState(state){
+        
+    }
+
+    getJSON(){
+        let output = {};
+        let connectors = [];
+        for(let key in this.connectors){
+            if(this.connectors.hasOwnProperty(key)){
+                let curr = this.connectors[key];
+                let connector = {};
+                connector["id"] = curr.getID();
+                connector["x"] = Math.round((curr.getX()+Number.EPSILON)*1000)/1000;
+                connector["y"] = Math.round((curr.getY()+Number.EPSILON)*1000)/1000;
+                connector["dx"] = curr.getOffsetX();
+                connector["dy"] = curr.getOffsetY();
+                connector["type"] = curr.getType();
+                connector["value"] = curr.getValue();
+                connectors.push(connector);
+            }
+        }
+        output["connectors"] = connectors;
+        return output;
+    }
+
+    updateConnectors(){
+        for(let key in this.connectors){
+            if(this.connectors.hasOwnProperty(key)){
+                let connected = false;
+                for(let k in this.wires){
+                    if(this.wires[k].getStart() != null && this.wires[k].getStart().getID() == this.connectors[key].getID()){
+                        connected = true;
+                    }
+                    else if(this.wires[k].getEnd() != null && this.wires[k].getEnd().getID() == this.connectors[key].getID()){
+                        connected = true;
+                    }
+                }
+                if(connected){
+                    this.connectors[key].setConnected(true);
+                }
+                else{
+                    this.connectors[key].setConnected(false);
+                    this.connectors[key].setValue(false);
+                }
+            }
+        }
+        //Add wires to each connector
+        for(let key in this.wires){
+            if(this.wires[key].getStart()){
+                let s = this.wires[key].getStart().getID();
+                this.connectors[s].addWire(this.wires[key]);
+            }
+            if(this.wires[key].getEnd()){
+                let e = this.wires[key].getEnd().getID();
+                this.connectors[e].addWire(this.wires[key]);
+            }
+        }
+    }
+
+
+
+
+}
+
+
+
 export class Connector{
 
     constructor(id,gateID,type,init,size,offsetX,offsetY){
@@ -37,6 +109,10 @@ export class Connector{
 
     checkDelete(){
         return this.toDelete;
+    }
+
+    getWires(){
+        return this.wires;
     }
 
     addWire(wire){
@@ -94,6 +170,14 @@ export class Connector{
 
     getY(){
         return this.y;
+    }
+
+    getOffsetX(){
+        return this.offsetX;
+    }
+
+    getOffsetY(){
+        return this.offsetY;
     }
 
     checkMouseHitbox(x,y){

@@ -284,9 +284,10 @@ let api = (function(){
 
 
     module.uploadCanvas = function(all) {
-        console.log("IN API.js RIGHT BEFORE UPLOAD")
-        console.log(all)
-        socket.emit('upload canvas', all.gates, all.wires, all.connectors, all.gateID, all.connectorID);
+        console.log("uploading canvas state");
+        console.log(all);
+        //console.log(JSON.stringify(all));
+        socket.emit('upload canvas', all);
 
         // TODO_2: remove this entire function, and replace it with the folling line,
         // where "all" is a string

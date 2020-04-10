@@ -50,8 +50,8 @@ $(document).ready(function(){
     }
 
     function updateMousePos(e){
-        let mouseX = parseInt(e.clientX - offsetX);
-        let mouseY = parseInt(e.clientY - offsetY);
+        let mouseX = parseInt(e.clientX - canvas.offsetLeft);
+        let mouseY = parseInt(e.clientY - canvas.offsetTop);
         prevX = currX;
         prevY = currY;
         currX = (mouseX * scaleX) + document.body.scrollLeft + document.documentElement.scrollLeft;;
@@ -84,11 +84,19 @@ $(document).ready(function(){
         sim.handleMouseMove(currX, currY, mouseDx, mouseDy);
     }
 
+    let timeWindow = 500; // time in ms
+    let lastExecution = new Date((new Date()).getTime() - timeWindow);
+
     $("#canvas").mousedown(function (e) {
         handleMouseDown(e);
     });
     $("#canvas").mousemove(function (e) {
         handleMouseMove(e);
+        //api.uploadCanvas(sim.getJSON());
+        if ((lastExecution.getTime() + timeWindow) <= (new Date()).getTime()) {
+            lastExecution = new Date();
+            api.uploadCanvas(sim.getJSON());
+        }
     });
     $("#canvas").mouseup(function (e) {
         handleMouseUp(e);
@@ -171,131 +179,8 @@ $(document).ready(function(){
         document.getElementById("current_canvas_info").prepend(elmt);
 
 
-
+        sim.updateState(myCanvas);
         return;
-
-        //TODO_2: you can remove the code for the rest of this function, and just take myCanvas as a string to
-        //        update the entire canvas
-        connectorID = 0;
-        gateID = 0;
-
-        console.log("CANVAS: ", myCanvas);
-
-        c.clearRect(0, 0, canvas.width, canvas.height);
-
-        // empty out each gate's input and output
-        for (let x in gates) {
-            gates.input = [];
-            gates.output = null;
-        }
-
-        // clear past configurations
-        gates = [];
-        wires = [];
-        connectors = {};
-        gateHandler.hover = null;
-        gateHandler.placed = false;
-        gateHandler.moving = null;
-
-        // re-create all the connectors
-        for (key in myCanvas.connector) {
-            let currConnector = myCanvas.connector[key];
-            let myConnector = new Connector(
-                currConnector.x,
-                currConnector.y,
-                currConnector.type,
-                currConnector.value,
-                currConnector.gateID,
-                currConnector.placed,
-                currConnector.connected,
-                currConnector.gateID,
-                currConnector.connectorID);
-            connectors[currConnector.connectorID] = myConnector;
-        }
-
-        // re-draw all the gates
-        if (myCanvas.gate) {
-
-            // loop through all gates and instantiate them again
-            for(let i = 0; i < myCanvas.gate.length; i++){
-                let currGate = myCanvas.gate[i];
-
-                let myGate = new LogicGate(
-                    currGate.type,
-                    currGate.width,
-                    currGate.height,
-                    currGate.valX,
-                    currGate.valY,
-                    currGate.input,
-                    currGate.output,
-                    currGate.placed,
-                    currGate.x,
-                    currGate.y,
-                    currGate.dx,
-                    currGate.dy);
-
-                myGate.draw();
-                gates.push(myGate);
-            }
-        }
-
-
-        // re-draw all the wires
-        if (myCanvas.wire) {
-
-            for(let i = 0; i < myCanvas.wire.length; i++){
-                let currWire = myCanvas.wire[i];
-                let startConnectorID = currWire.start.connectorID
-                let endConnectorID = currWire.end.connectorID
-
-                let startConnector;
-                let endConnector;
-
-                // for each connector, match its connector info with wire info
-                for(let key in connectors){
-                    if (connectors.hasOwnProperty(key)) {           
-                        let currConnectorID = connectors[key].connectorID;
-                        if (currConnectorID == startConnectorID) {
-                            startConnector = connectors[key];
-                        } else if (currConnectorID == endConnectorID) {
-                            endConnector = connectors[key];
-                        }
-                    }
-                }
-
-                // instantiate the Wire
-                let myWire = new Wire(
-                    startConnector,
-                    endConnector,
-                    currWire.value,
-                    currWire.nodes);
-
-
-                // draw the Wire
-                myWire.draw();
-                wires.push(myWire);
-
-            }
-        }
-
-        //draw the connectors back again
-        for(let key in connectors){
-            if (connectors.hasOwnProperty(key)) {           
-                connectors[key].draw();
-            }
-        }
-
-
-        // set the current connectorID and gateID
-        connectorID = myCanvas.connectorID;
-        gateID = myCanvas.gateID;
-
-
-        console.log("GATEID: ", gateID);
-        console.log("CONID: ", connectorID);
-        console.log(myCanvas.gate)
-        console.log(myCanvas.connector)
-
     });
 
 

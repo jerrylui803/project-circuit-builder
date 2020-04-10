@@ -1,7 +1,7 @@
 import {LogicGate,GateHandler} from "./LogicGate.js";
 import {Port,PortHandler} from "./IOPorts.js";
 import {Wire, WireHandler} from "./Wire.js";
-import {Connector} from "./Connector.js";
+import {Connector, ConnectorHandler} from "./Connector.js";
 import {uuidv4} from "./Functions.js";
 import {CONNECTOR,GATE,PORT,TOOL} from "./Enumeration.js";
 
@@ -20,7 +20,34 @@ export class Simulator{
         this.gateHandler = new GateHandler(this.images,this.components,this.connectors,this.wires);
         this.portHandler = new PortHandler(this.ports,this.connectors,this.wires);
         this.wireHandler = new WireHandler(this.components,this.connectors,this.wires);
+        this.connHandler = new ConnectorHandler(this.connectors,this.wires);
+    }
 
+    updateState(state){
+        // let gateHandler = state.gateHandler;
+        // let portHandler = state.portHandler;
+        // let wireHandler = state.wireHandler;
+        // let connHandler = state.connHandler;
+
+        this.connHandler.updateState(state.connHandler);
+        this.gateHandler.updateState(state.gateHandler);
+
+        console.log("updating sim canvas");
+    }
+
+    getJSON(){
+        let output = {};
+        output["gateHandler"] = this.gateHandler.getJSON();
+        output["portHandler"] = this.portHandler.getJSON();
+        output["wireHandler"] = this.wireHandler.getJSON();
+        output["connHandler"] = this.connHandler.getJSON();
+
+        return output;
+        
+        // console.log(JSON.stringify(this.gateHandler.getJSON()));
+        // console.log(JSON.stringify(this.portHandler.getJSON()));
+        // console.log(JSON.stringify(this.wireHandler.getJSON()));
+        // console.log(JSON.stringify(this.connectorHandler.getJSON()));
     }
 
     setTool(tool){
@@ -51,13 +78,14 @@ export class Simulator{
         else if(this.selectedTool == TOOL.WIRE){
             this.wireHandler.handleWireDown(x,y);
         }
-        this.updateConnectors();
+        this.connHandler.updateConnectors();
         this.updateGates();
         this.updateWires();
         this.updateCanvas(x,y);
     }
 
     handleMouseUp(x,y,dx,dy){
+        this.toString();
         if(this.selectedTool == TOOL.MOVE){
             this.gateHandler.handleMoveUp(x,y);
             this.portHandler.handleMoveUp(x,y,dx,dy);
@@ -119,40 +147,6 @@ export class Simulator{
     updateWires(){
         for(let key in this.wires){
             this.wires[key].updateValue();
-        }
-    }
-
-    updateConnectors(){
-        for(let key in this.connectors){
-            if(this.connectors.hasOwnProperty(key)){
-                let connected = false;
-                for(let k in this.wires){
-                    if(this.wires[k].getStart() != null && this.wires[k].getStart().getID() == this.connectors[key].getID()){
-                        connected = true;
-                    }
-                    else if(this.wires[k].getEnd() != null && this.wires[k].getEnd().getID() == this.connectors[key].getID()){
-                        connected = true;
-                    }
-                }
-                if(connected){
-                    this.connectors[key].setConnected(true);
-                }
-                else{
-                    this.connectors[key].setConnected(false);
-                    this.connectors[key].setValue(false);
-                }
-            }
-        }
-        //Add wires to each connector
-        for(let key in this.wires){
-            if(this.wires[key].getStart()){
-                let s = this.wires[key].getStart().getID();
-                this.connectors[s].addWire(this.wires[key]);
-            }
-            if(this.wires[key].getEnd()){
-                let e = this.wires[key].getEnd().getID();
-                this.connectors[e].addWire(this.wires[key]);
-            }
         }
     }
 

@@ -14,6 +14,29 @@ export class PortHandler{
         this.downy = 0;
     }
 
+    getJSON(){
+        let output = {};
+        //Hover and moving if this user
+        output["hover"] = this.hover;
+        output["moving"] = this.moving;
+        let ports = [];
+        for(let key in this.ports){
+            if(this.ports.hasOwnProperty(key)){
+                let curr = this.ports[key];
+                let port = {};
+                port["id"] = curr.getID();
+                port["x"] = Math.round((curr.getX()+Number.EPSILON)*1000)/1000;
+                port["y"] = Math.round((curr.getY()+Number.EPSILON)*1000)/1000;
+                port["type"] = curr.getType();
+                port["value"] = curr.getValue();
+                port["connector"] = curr.getConnector().getID();
+                ports.push(port);
+            }
+        }
+        output["ports"] = ports;
+        return output;
+    }
+
     handleAddDown(x,y){
         if(this.hover){
             this.ports[this.hover].setPlaced(true);
@@ -122,18 +145,33 @@ export class Port{
         this.connector = null;
 
     }
+    getX(){
+        return this.x;
+    }
+    getY(){
+        return this.y;
+    }
     getType(){
         return this.type;
     }
     setnum(num){
         this.num = num;
     }
+    getNum(){
+        return this.num;
+    }
     setConnector(connector){
         this.connector = connector;
+    }
+    getConnector(){
+        return this.connector;
     }
 
     getID(){
         return this.id;
+    }
+    getValue(){
+        return this.value;
     }
 
     queueDelete(){

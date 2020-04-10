@@ -12,6 +12,54 @@ export class GateHandler{
         this.moving = null;
     }
 
+    updateState(state){
+        //ignore hover and moving for now
+        //create any new components not seen before
+        let gates = state.gates;
+        for(let i = 0; i < gates.length; i++){
+                let id = gates[key].id;
+                let x = gates[key].x;
+                let y = gates[key].y;
+                let type = gates[key].type;
+                if(!this.components[id]){
+                    let newGate = new LogicGate(id,type,this.images[type]);
+                    newGate.movePosition(x,y);
+                    //this is a new gate never before seen, add it
+                }
+            }
+        }
+
+    }
+
+    getJSON(){
+        let output = {};
+        //hover and moving of this user
+        output["hover"] = this.hover;
+        output["moving"] = this.moving;
+        let components = [];
+        for(let key in this.components){
+            if(this.components.hasOwnProperty(key)){
+                let curr = this.components[key];
+                let gate = {};
+                gate["id"] = curr.getID();
+                gate["x"] = Math.round((curr.getX()+Number.EPSILON)*1000)/1000;
+                gate["y"] = Math.round((curr.getY()+Number.EPSILON)*1000)/1000;
+                gate["type"] = curr.getType();
+                let connectors = [];
+                let inputs = curr.getInputs();
+                let outputs = curr.getOutputs();
+                for(let i = 0 ; i < inputs.length; i++){
+                    connectors.push(inputs[i].getID());
+                }
+                connectors.push(outputs.getID());
+                gate["connectors"] = connectors;
+                components.push(gate);
+            }
+        }
+        output["gates"] = components;
+        return output;
+    }
+
     handleAddDown(x,y){
         if(this.hover){
             this.components[this.hover].setPlaced(true);
@@ -127,6 +175,19 @@ export class LogicGate {
         this.output = null;
     }
 
+    getX(){
+        return this.cx;
+    }
+
+    getY(){
+        return this.cy;
+    }
+    getType(){
+        return this.type;
+    }
+    getPlaced(){
+        return this.placed;
+    }
     queueDelete(){
         this.toDelete = true;
         this.destroyConnectors();
@@ -170,6 +231,13 @@ export class LogicGate {
 
     setInputs(inputs){
         this.inputs = inputs;
+    }
+
+    getInputs(){
+        return this.inputs;
+    }
+    getOutputs(){
+        return this.output;
     }
 
     setOutput(output){
