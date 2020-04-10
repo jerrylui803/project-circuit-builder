@@ -1,9 +1,12 @@
 import {Connector} from "./Connector.js";
 import {fold,or,and,xor,uuidv4} from "./Functions.js";
 import {CONNECTOR,GATE,PORT,TOOL} from "./Enumeration.js";
+import {Action,ActionBuilder} from "./Action.js";
+import {Simulator} from "./simulator.js";
 
 export class GateHandler{
-    constructor(images,components,connectors,wires){
+    constructor(action,images,components,connectors,wires){
+        this.action = action;
         this.images = images;
         this.components = components;
         this.connectors = connectors;
@@ -12,16 +15,22 @@ export class GateHandler{
         this.moving = null;
     }
 
+    toObject(gate){
+
+    }
+
     updateState(state){
         for(let key in this.components){
             delete this.components[key];
         }
-        let hover = state.hover;
         //ignore hover and moving for now
         //create any new components not seen before
         let gates = state.gates;
         for(let i = 0; i < gates.length; i++){
             let id = gates[i].id;
+            if(this.components[id]){
+                continue;
+            }
             let x = gates[i].x;
             let y = gates[i].y;
             let type = gates[i].type;
@@ -36,33 +45,17 @@ export class GateHandler{
             newGate.setInputs(ins);
             newGate.setOutput(this.connectors[output]);
             newGate.updatePosition(x,y);
-            if(newGate.getID() == hover){
-               newGate.setPlaced(false); 
-            }
-            else{
-                newGate.setPlaced(true);
-            }
-            
+            newGate.setPlaced(gates[i].placed);
             this.components[id] = newGate;
-            
-                //set inputs and output connectors
-
-                //this is a new gate never before seen, add it
-            //}
         }
-        
-
     }
 
-    getJSON(){
+    static getJSON(component){
         let output = {};
-        //hover and moving of this user
-        output["hover"] = this.hover;
-        output["moving"] = this.moving;
         let components = [];
-        for(let key in this.components){
-            if(this.components.hasOwnProperty(key)){
-                let curr = this.components[key];
+        for(let key in component){
+            if(component.hasOwnProperty(key)){
+                let curr = component[key];
                 let gate = {};
                 gate["id"] = curr.getID();
                 gate["x"] = Math.round((curr.getX()+Number.EPSILON)*1000)/1000;
@@ -76,6 +69,7 @@ export class GateHandler{
                 }
                 gate["output"] = outputs.getID();
                 gate["inputs"] = connectors;
+                gate["placed"] = curr.getPlaced();
                 components.push(gate);
             }
         }
@@ -84,8 +78,9 @@ export class GateHandler{
     }
 
     handleAddDown(x,y){
-        if(this.hover){
+        if(this.checkHover()){
             this.components[this.hover].setPlaced(true);
+            api.uploadCanvas(ActionBuilder.buildAction(x,y,"PLACE").setObject(this.hover));
             this.hover = null;
         }
     }
@@ -94,6 +89,8 @@ export class GateHandler{
         for(let key in this.components){
             if(this.components[key].checkMouseHitbox(x,y)){
                 this.components[key].queueDelete();
+                // api.uploadCanvas(ActionBuilder.buildAction(x,y,"DELETE").setObject(key));
+                //api.uploadCanvas(ActionBuilder.buildAction(x,y,"ADD").setObject(Simulator.getJSON(this.components,this.connectors,this.wires,this.ports)));
                 break;
             }
         }
@@ -118,7 +115,8 @@ export class GateHandler{
     }
 
     handleMouseOut(x,y){
-        if(this.hover){
+        if(this.checkHover()){
+            api.uploadCanvas(ActionBuilder.buildAction(x,y,"DELETE").setObject(this.hover));
             this.components[this.hover].queueDelete();
             this.hover = null;
         }
@@ -127,19 +125,27 @@ export class GateHandler{
     }
 
     handleAddMove(type,x,y){
-        if(this.hover){
+        if(this.checkHover()){
             this.components[this.hover].updatePosition(x,y);
+            api.uploadCanvas(ActionBuilder.buildAction(x,y,"HOVER").setObject(this.hover));
         }
         else{
             this.createComponent(type);
             this.components[this.hover].updatePosition(x,y);
+            api.uploadCanvas(ActionBuilder.buildAction(x,y,"ADD").setObject(Simulator.getJSON(this.components,this.connectors,this.wires,this.ports)));
+
         }
     }
 
     handleMoveMove(dx,dy){
         if(this.moving){
             this.components[this.moving].movePosition(dx,dy);
+            api.uploadCanvas(ActionBuilder.buildAction(dx,dy,"MOVE").setObject(this.moving));
         }
+    }
+
+    checkHover(){
+        return (this.hover && this.components[this.hover]);
     }
 
     createComponent(type){
@@ -307,14 +313,22 @@ export class LogicGate {
     }
 
     // draw logic gate on canvas
-    draw(c,x,y){
+    draw(c,x,y,xx,yy){
         if(!this.placed){
             c.globalAlpha = 0.4;
         }
         else{
             c.globalAlpha = 1.0;
         }
-        if(this.checkMouseHitbox(x,y) && this.placed){
+        if(this.checkMouseHitbox(xx,yy)){
+            c.beginPath();
+            c.rect(this.x, this.y, this.width, this.height);
+            c.strokeStyle = "red";
+            c.lineWidth = 4;
+            c.stroke();
+            c.closePath();
+        }
+        else if(this.checkMouseHitbox(x,y)){
             c.beginPath();
             c.rect(this.x, this.y, this.width, this.height);
             c.strokeStyle = "blue"
