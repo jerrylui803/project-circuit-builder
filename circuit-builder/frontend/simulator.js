@@ -33,7 +33,6 @@ export class Simulator{
         let x3 = test.gateHandler;
         let x4 = test.portHandler;
         if(x1 && x2 && x3 && x4){
-            console.log("NIGGAAAA",x1,x2,x3,x4);
             this.connHandler.updateState(test.connHandler);
             this.wireHandler.updateState(test.wireHandler);
             this.gateHandler.updateState(test.gateHandler);
