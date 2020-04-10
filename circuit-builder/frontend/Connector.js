@@ -1,8 +1,7 @@
 import {CONNECTOR,GATE,PORT,TOOL} from "./Enumeration.js";
 
 export class ConnectorHandler{
-    constructor(action,connectors,wires){
-        this.action = action;
+    constructor(connectors,wires){
         this.connectors = connectors;
         this.wires = wires;
     }
@@ -14,9 +13,6 @@ export class ConnectorHandler{
         let connectors = state.connectors;
         for(let i = 0; i < connectors.length; i++){
             let id = connectors[i].id;
-            if(this.connectors[id]){
-                continue;
-            }
             let gateid = connectors[i].gateid;
             let x = connectors[i].x;
             let y = connectors[i].y;
@@ -35,12 +31,12 @@ export class ConnectorHandler{
         }
     }
 
-    static getJSON(conn){
+    getJSON(){
         let output = {};
         let connectors = [];
-        for(let key in conn){
-            if(conn.hasOwnProperty(key)){
-                let curr = conn[key];
+        for(let key in this.connectors){
+            if(this.connectors.hasOwnProperty(key)){
+                let curr = this.connectors[key];
                 let connector = {};
                 connector["id"] = curr.getID();
                 connector["gateid"] = curr.getGateID();
@@ -81,16 +77,19 @@ export class ConnectorHandler{
         }
         //Add wires to each connector
         for(let key in this.wires){
-            if(this.wires[key].getStart() && this.wires[key].getStart().getID()){
+            if(this.wires[key].getStart()){
                 let s = this.wires[key].getStart().getID();
                 this.connectors[s].addWire(this.wires[key]);
             }
-            if(this.wires[key].getEnd() && this.wires[key].getEnd().getID()){
+            if(this.wires[key].getEnd()){
                 let e = this.wires[key].getEnd().getID();
                 this.connectors[e].addWire(this.wires[key]);
             }
         }
     }
+
+
+
 
 }
 
@@ -214,7 +213,7 @@ export class Connector{
     }
 
     // draw the connector
-    draw(c,x,y,xx,yy){
+    draw(c,x,y){
         if(!this.placed){
             c.globalAlpha = 0.4;
         }
@@ -223,8 +222,7 @@ export class Connector{
         }
         c.beginPath();
         c.lineWidth = 4;
-        if(this.checkMouseHitbox(xx,yy)) c.strokeStyle = "red";
-        else if(this.checkMouseHitbox(x,y)) c.strokeStyle = "cyan";
+        if(this.checkMouseHitbox(x,y)) c.strokeStyle = "cyan";
         else c.strokeStyle = "black";
         c.arc(this.x, this.y, this.d, 2 * Math.PI, false);
         if(this.getValue()){

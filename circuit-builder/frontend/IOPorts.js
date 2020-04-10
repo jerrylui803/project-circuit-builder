@@ -1,12 +1,9 @@
 import {Connector} from "./Connector.js";
 import {fold,or,and,xor,uuidv4} from "./Functions.js";
 import {CONNECTOR,GATE,PORT,TOOL} from "./Enumeration.js";
-import {Action,ActionBuilder} from "./Action.js";
-import {Simulator} from "./simulator.js";
 
 export class PortHandler{
-    constructor(action,ports,connectors,wires){
-        this.action = action;
+    constructor(ports,connectors,wires){
         this.ports = ports;
         this.connectors = connectors;
         this.wires = wires;
@@ -17,49 +14,23 @@ export class PortHandler{
         this.downy = 0;
     }
 
-    updateState(state){
-        for(let key in this.ports){
-            delete this.ports[key];
-        }
-        let ports = state.ports;
-        for(let i = 0; i < ports.length; i++){
-            let id = ports[i].id;
-            if(this.ports[id]){
-                continue;
-            }
-            let x = ports[i].x;
-            let y = ports[i].y;
-            let type = ports[i].type;
-            let value = ports[i].value;
-            let connector = ports[i].connector;
-            let size = ports[i].size;
-            //id,type,size
-            let newPort = new Port(id,type,size);
-            newPort.setConnector(this.connectors[connector]);
-            newPort.setValue(value);
-            newPort.updatePosition(x,y);
-        
-            this.ports[id] = newPort;
-        }
-    }
-
-    static getJSON(port){
+    getJSON(){
         let output = {};
+        //Hover and moving if this user
+        output["hover"] = this.hover;
+        output["moving"] = this.moving;
         let ports = [];
-        for(let key in port){
-            if(port.hasOwnProperty(key)){
-                let curr = port[key];
-                let io = {};
-                io["id"] = curr.getID();
-                io["x"] = Math.round((curr.getX()+Number.EPSILON)*1000)/1000;
-                io["y"] = Math.round((curr.getY()+Number.EPSILON)*1000)/1000;
-                io["type"] = curr.getType();
-                let connector = curr.getConnector();
-                io["value"] = curr.getValue();
-                io["connector"] = connector.getID();
-                io["placed"] = curr.getPlaced();
-                io["size"] = curr.getSize();
-                ports.push(io);
+        for(let key in this.ports){
+            if(this.ports.hasOwnProperty(key)){
+                let curr = this.ports[key];
+                let port = {};
+                port["id"] = curr.getID();
+                port["x"] = Math.round((curr.getX()+Number.EPSILON)*1000)/1000;
+                port["y"] = Math.round((curr.getY()+Number.EPSILON)*1000)/1000;
+                port["type"] = curr.getType();
+                port["value"] = curr.getValue();
+                port["connector"] = curr.getConnector().getID();
+                ports.push(port);
             }
         }
         output["ports"] = ports;
@@ -67,9 +38,8 @@ export class PortHandler{
     }
 
     handleAddDown(x,y){
-        if(this.checkHover()){
+        if(this.hover){
             this.ports[this.hover].setPlaced(true);
-            api.uploadCanvas(ActionBuilder.buildAction(x,y,"PLACEPORT").setObject(this.hover));
             this.hover = null;
         }
     }
@@ -78,7 +48,6 @@ export class PortHandler{
         for(let key in this.ports){
             if(this.ports[key].checkMouseHitbox(x,y)){
                 this.ports[key].queueDelete();
-                api.uploadCanvas(ActionBuilder.buildAction(x,y,"DELETEPORT").setObject(key));
                 break;
             }
         }
@@ -107,7 +76,6 @@ export class PortHandler{
                 if(this.ports[key].checkMouseHitbox(x,y)){
                     if(this.ports[key].getType() == PORT.IN){
                         this.ports[key].toggleValue();
-                        api.uploadCanvas(ActionBuilder.buildAction(x,y,"TOGGLE").setObject(key));
                         break;
                     }
                 }
@@ -116,8 +84,7 @@ export class PortHandler{
     }
 
     handleMouseOut(x,y){
-        if(this.checkHover()){
-            api.uploadCanvas(ActionBuilder.buildAction(x,y,"DELETEPORT").setObject(this.hover));
+        if(this.hover){
             this.ports[this.hover].queueDelete();
             this.hover = null;
         }
@@ -126,25 +93,19 @@ export class PortHandler{
     }
 
     handleAddMove(type,x,y){
-        if(this.checkHover()){
+        if(this.hover){
             this.ports[this.hover].updatePosition(x,y);
-            api.uploadCanvas(ActionBuilder.buildAction(x,y,"HOVERPORT").setObject(this.hover));
         }
         else{
             this.createComponent(type);
             this.ports[this.hover].updatePosition(x,y);
-            api.uploadCanvas(ActionBuilder.buildAction(x,y,"ADD").setObject(Simulator.getJSON(this.components,this.connectors,this.wires,this.ports)));
         }
     }
 
     handleMoveMove(dx,dy){
         if(this.moving){
             this.ports[this.moving].movePosition(dx,dy);
-            api.uploadCanvas(ActionBuilder.buildAction(dx,dy,"MOVEPORT").setObject(this.moving));
         }
-    }
-    checkHover(){
-        return (this.hover && this.ports[this.hover]);
     }
 
     createComponent(type){
@@ -184,9 +145,6 @@ export class Port{
         this.connector = null;
 
     }
-    getSize(){
-        return this.d;
-    }
     getX(){
         return this.x;
     }
@@ -223,9 +181,6 @@ export class Port{
     checkDelete(){
         return this.toDelete;
     }
-    getPlaced(){
-        return this.placed;
-    }
 
     setPlaced(val){
         this.placed = val;
@@ -239,10 +194,6 @@ export class Port{
     updatePosition(x,y){
         this.x = x;
         this.y = y;
-    }
-    setValue(value){
-        this.value = value;
-        this.updateValue();
     }
 
     updateValue(){
@@ -277,22 +228,14 @@ export class Port{
         return (Math.sqrt((a*a) + (b*b)) < (this.d * 2));
     }
 
-    draw(c,x,y,xx,yy){
+    draw(c,x,y){
         if(!this.placed){
             c.globalAlpha = 0.4;
         }
         else{
             c.globalAlpha = 1.0;
         }
-        if(this.checkMouseHitbox(xx,yy)){
-            c.beginPath();
-            c.strokeStyle = "red"
-            c.lineWidth = 8;
-            c.arc(this.x, this.y, this.d, 2 * Math.PI, false);
-            c.stroke();
-            c.closePath();
-        }
-        else if(this.checkMouseHitbox(x,y) && this.placed){
+        if(this.checkMouseHitbox(x,y) && this.placed){
             c.beginPath();
             c.strokeStyle = "blue"
             c.lineWidth = 8;

@@ -1,23 +1,22 @@
 import {Connector} from "./Connector.js";
 import {fold,or,and,xor,uuidv4,pDistance} from "./Functions.js";
 import {CONNECTOR,GATE,PORT,TOOL} from "./Enumeration.js";
-import {Action,ActionBuilder} from "./Action.js";
-import {Simulator} from "./simulator.js";
 
 export class WireHandler{
-    constructor(action,components,connectors,wires){
-        this.action = action;
+    constructor(components,connectors,wires){
         this.components = components;
         this.connectors = connectors;
         this.wires = wires;
         this.hover = null;
         this.drawing = false;
     }
-
     updateState(state){
         for(let key in this.wires){
             delete this.wires[key];
         }
+        let hover = state.hover;
+        //ignore hover and moving for now
+        //create any new components not seen before
         let wires = state.wires;
         for(let i = 0; i < wires.length; i++){
             let id = wires[i].id;
@@ -25,44 +24,19 @@ export class WireHandler{
             let end = wires[i].end;
             let x = wires[i].startx;
             let y = wires[i].starty;
-            if(!this.connectors[start] || !this.connectors[end]){
-                let newWire;
-                if(this.connectors[start]){
-                    if(this.connectors[start].getType() == CONNECTOR.IN){
-                        newWire = new Wire(id,null,this.connectors[start]);
-                    }
-                    else{
-                        newWire = new Wire(id,this.connectors[start],null);
-                    }
-                    
-                    //this.connectors[start].addWire(newWire);
-                    newWire.updateHover(x,y);
-                    this.wires[newWire.getID()] = newWire;
-                }
-                else if(this.connectors[end]){
-                    if(this.connectors[end].getType() == CONNECTOR.IN){
-                        newWire = new Wire(id,null,this.connectors[end]);
-                    }
-                    else{
-                        newWire = new Wire(id,this.connectors[end],null);
-                    }
-                    //this.connectors[start].addWire(newWire);
-                    newWire.updateHover(x,y);
-                    this.wires[newWire.getID()] = newWire;
-                }
+            if(!start || !end){
+                // let b;
+                // if(start){
+                //     let newWire = newWire(id,start,null);
+                // }
+                // else{
+                //     let newWire = newWire(id,null,end);
+                // }
 
             }
             else{
-                let newWire;
-                if(this.connectors[start].getType() == CONNECTOR.OUT){
-                    newWire = new Wire(id,this.connectors[start],this.connectors[end]);
-                }
-                else{
-                    newWire = new Wire(id,this.connectors[end],this.connectors[start]);
-                }
+                let newWire = new Wire(id,this.connectors[start],this.connectors[end]);
                 this.wires[id] = newWire;
-                this.connectors[start].addWire(newWire);
-                this.connectors[end].addWire(newWire);
             }
             
         }
@@ -72,12 +46,15 @@ export class WireHandler{
     }
 
 
-    static getJSON(wires){
+    getJSON(){
         let output = {};
-        let wirelist = [];
-        for(let key in wires){
-            if(wires.hasOwnProperty(key)){
-                let curr = wires[key];
+        //The hover and drawing of this user
+        output["hover"] = this.hover;
+        output["drawing"] = this.drawing;
+        let wires = [];
+        for(let key in this.wires){
+            if(this.wires.hasOwnProperty(key)){
+                let curr = this.wires[key];
                 let wire = {};
                 wire["id"] = curr.getID();
                 if(curr.getStart() && curr.getEnd()){
@@ -95,10 +72,10 @@ export class WireHandler{
                         wire["end"] = curr.getEnd().getID();
                     }
                 }
-                wirelist.push(wire);
+                wires.push(wire);
             }
         }
-        output["wires"] = wirelist;
+        output["wires"] = wires;
         return output;
     }
 
@@ -178,20 +155,17 @@ export class WireHandler{
                     if(this.connectors[key].getType() == CONNECTOR.IN){
                         let newWire = new Wire(uuidv4() ,null, this.connectors[key]);
                         console.log("creating new wire id",newWire.getID());
-                        newWire.updateHover(x,y);
                         this.wires[newWire.getID()] = newWire;
                         this.hover = newWire.getID();
                     }
                     else{
                         let newWire = new Wire(uuidv4(), this.connectors[key], null);
                         console.log("creating new wire id",newWire.getID());
-                        newWire.updateHover(x,y);
                         this.wires[newWire.getID()] = newWire;
                         this.hover = newWire.getID();
                     }
                     console.log("creating new wire at",this.connectors[key]);
                     this.drawing = true;
-                    api.uploadCanvas(ActionBuilder.buildAction(x,y,"ADD").setObject(Simulator.getJSON(this.components,this.connectors,this.wires)));
                     break;
                 }   
             }
@@ -203,16 +177,12 @@ export class WireHandler{
                     console.log("HIT!");
                     cancel = false;
                     if(this.checkCancel(this.wires[this.hover],this.connectors[key])){
-                        this.cancelWire(x,y);
+                        this.cancelWire();
                         console.log("cancelling wire");
                         break;
                     }
                     if(this.drawing && this.checkValid(this.wires[this.hover],this.connectors[key])){
                         this.wires[this.hover].setEndpoint(this.connectors[key]);
-                        let b = {};
-                        b["hover"] = this.hover;
-                        b["key"] = key;
-                        api.uploadCanvas(ActionBuilder.buildAction(x,y,"PLACEWIRE").setObject(b));
                         this.hover = null;
                         this.drawing = false;
                         console.log("Connected endpoint");
@@ -223,34 +193,20 @@ export class WireHandler{
 
             if(cancel){
                 console.log("MISS!");
-                this.cancelWire(x,y);
+                this.cancelWire();
             }
         }
     }
-    checkHover(){
-        return (this.hover && this.wires[this.hover]);
-    }
-    cancelWire(x,y){
-        if(this.checkHover()){
+    cancelWire(){
+        if(this.hover)
             delete this.wires[this.hover];
-            api.uploadCanvas(ActionBuilder.buildAction(x,y,"DRAWING").setObject(this.hover));
-        }
-            
         this.hover = null;
         this.drawing = false;
-    }
-
-    hoverWire(x,y){
-        if(this.checkHover() && this.wires[this.hover]){
-            this.wires[this.hover].updateHover(x,y);
-            api.uploadCanvas(ActionBuilder.buildAction(x,y,"DRAWING").setObject(this.hover));
-        }
     }
 
     handleDeleteDown(x,y){
         for(let key in this.wires){
             if(this.wires[key].checkMouseHitbox(x,y)){
-                api.uploadCanvas(ActionBuilder.buildAction(x,y,"DELETEWIRE").setObject(key));
                 delete this.wires[key];
             }
         }
@@ -270,6 +226,7 @@ export class Node{
 
 export class Wire{
     constructor(id,start,end){
+        console.log("MAKE NEW WIRE");
         this.id = id;
         this.start = start;
         this.end = end;
@@ -296,10 +253,6 @@ export class Wire{
     }
     getY(){
         return this.hy;
-    }
-    updatePosition(x,y){
-        this.hx=x;
-        this.hy=y;
     }
     getID(){
         return this.id;
@@ -401,7 +354,7 @@ export class Wire{
         }
     }
 
-    draw(c,x,y,xx,yy){
+    draw(c,x,y){
         c.strokeStyle = "black";
         c.beginPath();
         if(!this.start || !this.end){
@@ -411,17 +364,18 @@ export class Wire{
             c.globalAlpha = 1.0;
         }
         let x1, x2, y1, y2;
+        this.updateHover(x,y);
         if(this.start && !this.end){
             x1 = this.start.getX();
             y1 = this.start.getY();
-            x2 = this.hx;
-            y2 = this.hy;
+            x2 = x;
+            y2 = y;
         }
         else if(!this.start && this.end){
             x2 = this.end.getX();
             y2 = this.end.getY();
-            x1 = this.hx;
-            y1 = this.hy;
+            x1 = x;
+            y1 = y;
         }
         else{
             x1 = this.start.getX();
@@ -433,10 +387,7 @@ export class Wire{
         c.lineJoin = "round";
         c.lineCap = "round";
         c.lineWidth = this.lineWidth;
-        if(this.checkMouseHitbox(xx,yy)){
-            c.strokeStyle = "red";
-        }
-        else if(this.checkMouseHitbox(x,y)){
+        if(this.checkMouseHitbox(x,y)){
             c.strokeStyle = "cyan";
         }
         else{

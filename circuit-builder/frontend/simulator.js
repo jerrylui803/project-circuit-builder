@@ -4,7 +4,6 @@ import {Wire, WireHandler} from "./Wire.js";
 import {Connector, ConnectorHandler} from "./Connector.js";
 import {uuidv4} from "./Functions.js";
 import {CONNECTOR,GATE,PORT,TOOL} from "./Enumeration.js";
-import {Action,ActionBuilder} from "./Action.js";
 
 //this file operates the simulator
 export class Simulator{
@@ -12,127 +11,44 @@ export class Simulator{
         this.context = canvas;
         this.selectedTool = null;
         this.selectedComponent = null;
-        this.action = new Action();
-        this.x,this.y,this.z=false;
 
         this.images = images;
         this.components = {};
         this.ports = {};
         this.connectors = {};
         this.wires = {};
-        this.gateHandler = new GateHandler(this.action,this.images,this.components,this.connectors,this.wires);
-        this.portHandler = new PortHandler(this.action,this.ports,this.connectors,this.wires);
-        this.wireHandler = new WireHandler(this.action,this.components,this.connectors,this.wires);
-        this.connHandler = new ConnectorHandler(this.action,this.connectors,this.wires);
+        this.gateHandler = new GateHandler(this.images,this.components,this.connectors,this.wires);
+        this.portHandler = new PortHandler(this.ports,this.connectors,this.wires);
+        this.wireHandler = new WireHandler(this.components,this.connectors,this.wires);
+        this.connHandler = new ConnectorHandler(this.connectors,this.wires);
     }
 
     updateState(state){
-        let action = state.action;
-        let x = state.x;
-        let y = state.y;
-        let object = state.object;
-        if(action == "ADD"){
-            this.connHandler.updateState(object.connHandler);
-            this.wireHandler.updateState(object.wireHandler);
-            this.gateHandler.updateState(object.gateHandler);
-            this.portHandler.updateState(object.portHandler);
-            this.updateCanvas(x,y);
+        if (!state) {
+            return;
         }
-        else if(action == "PLACE"){
-            this.components[object].setPlaced(true);
-            this.updateCanvas(x,y);
-        }
-        else if(action == "HOVER"){
-            this.components[object].updatePosition(x,y);
-        }
-        else if(action == "DRAWING"){
-            this.wires[object].updateHover(x,y);
-        }
-        else if(action == "MOVE"){
-           this.components[object].movePosition(x,y);
-        }
-        else if(action == "DELETE"){
-            this.components[object].queueDelete();
-            console.log(this.components[object]);
-            this.connHandler.updateConnectors();
-            this.updateGates();
-            this.updateWires();
-            this.updateCanvas(x,y);
-        }
-        else if(action == "DELETEWIRE"){
-            this.wires[object].queueDelete();
-            console.log(this.components[object]);
-            this.updateCanvas(x,y);
-        }
-        else if(action == "PLACEWIRE"){
-            let hover = object.hover;
-            let key = object.key;
-            this.wires[hover].setEndpoint(this.connectors[key]);
-            this.connHandler.updateConnectors();
-            this.updateGates();
-            this.updateWires();
-            this.updateCanvas(x,y);
-        }
-        else if(action == "HOVERPORT"){
-            this.ports[object].updatePosition(x,y);
-        }
-        else if(action == "DELETEPORT"){
-            this.ports[object].queueDelete();
-            this.updateCanvas(x,y);
-        }
-        else if(action == "MOVEPORT"){
-            this.ports[object].movePosition(x,y);
-        }
-        else if(action == "PLACEPORT"){
-            this.ports[object].setPlaced(true);
-        }
-        else if(action == "TOGGLE"){
-            this.ports[object].toggleValue();
-        }
-        else if(action == "MOUSE"){
-            this.x=x;
-            this.y=y;
-            if(object!=null)
-                this.z=object;
-            this.updateCanvas(x,y);
-        }
-        else if(action == "MOUSEOUT"){
-            this.x=null;
-            this.y=null;
-            this.updateCanvas(x,y);
-        }
-        this.connHandler.updateConnectors();
-        this.updateGates();
-        this.updateWires();
+
         // let gateHandler = state.gateHandler;
         // let portHandler = state.portHandler;
         // let wireHandler = state.wireHandler;
         // let connHandler = state.connHandler;
 
-        // if(!state){
-        //     return
-        // }
-        // this.connHandler.updateState(state.connHandler);
+        this.connHandler.updateState(state.connHandler);
 
 
-        // this.gateHandler.updateState(state.gateHandler);
+        this.gateHandler.updateState(state.gateHandler);
 
-        // this.wireHandler.updateState(state.wireHandler);
+        this.wireHandler.updateState(state.wireHandler);
 
-        //console.log("updating sim canvas");
+        console.log("updating sim canvas");
     }
 
-
-    static getJSON(gates,connectors,wires,ports){
+    getJSON(){
         let output = {};
-        // output["gateHandler"] = this.gateHandler.getJSON();
-        // output["portHandler"] = this.portHandler.getJSON();
-        // output["wireHandler"] = this.wireHandler.getJSON();
-        // output["connHandler"] = this.connHandler.getJSON();
-        output["connHandler"] = ConnectorHandler.getJSON(connectors);
-        output["wireHandler"] = WireHandler.getJSON(wires);
-        output["gateHandler"] = GateHandler.getJSON(gates);
-        output["portHandler"] = PortHandler.getJSON(ports);
+        output["gateHandler"] = this.gateHandler.getJSON();
+        output["portHandler"] = this.portHandler.getJSON();
+        output["wireHandler"] = this.wireHandler.getJSON();
+        output["connHandler"] = this.connHandler.getJSON();
 
         return output;
         
@@ -170,9 +86,6 @@ export class Simulator{
         else if(this.selectedTool == TOOL.WIRE){
             this.wireHandler.handleWireDown(x,y);
         }
-        this.updateCanvas(x,y);
-        api.uploadCanvas(ActionBuilder.buildAction(x,y,"ADD").setObject(Simulator.getJSON(this.components,this.connectors,this.wires,this.ports)));
-        api.uploadCanvas(ActionBuilder.buildAction(x,y,"MOUSE").setObject(true));
         this.connHandler.updateConnectors();
         this.updateGates();
         this.updateWires();
@@ -185,22 +98,18 @@ export class Simulator{
             this.gateHandler.handleMoveUp(x,y);
             this.portHandler.handleMoveUp(x,y,dx,dy);
         }
-        api.uploadCanvas(ActionBuilder.buildAction(x,y,"MOUSE").setObject(false));
     }
 
     handleMouseOut(x,y,dx,dy){
+        console.log(this.connectors);
         this.gateHandler.handleMouseOut(x,y);
         this.portHandler.handleMouseOut(x,y);
         this.updateCanvas(x,y);
-        api.uploadCanvas(ActionBuilder.buildAction(x,y,"MOUSEOUT").setObject(null));
     }
 
     handleMouseMove(x,y,dx,dy){
         if(this.selectedTool != TOOL.WIRE){
             this.wireHandler.cancelWire();
-        }
-        else{
-            this.wireHandler.hoverWire(x,y);
         }
         if(this.selectedTool == TOOL.ADD){
             this.gateHandler.handleAddMove(this.selectedComponent,x,y);
@@ -213,39 +122,21 @@ export class Simulator{
             this.portHandler.handleMoveMove(dx,dy);
         }
         this.renderCanvas(x,y);
-        api.uploadCanvas(ActionBuilder.buildAction(x,y,"MOUSE").setObject(null));
     }
 
     renderCanvas(x,y){
         this.context.clearRect(0, 0, canvas.width, canvas.height);
         for(let key in this.wires){
-            this.wires[key].draw(this.context,x,y,this.x,this.y);
+            this.wires[key].draw(this.context,x,y);
         }
         for(let key in this.components){
-            this.components[key].draw(this.context,x,y,this.x,this.y);
+            this.components[key].draw(this.context,x,y);
         }
         for(let key in this.ports){
-            this.ports[key].draw(this.context,x,y,this.x,this.y);
+            this.ports[key].draw(this.context,x,y);
         }
         for(let key in this.connectors){
-            this.connectors[key].draw(this.context,x,y,this.x,this.y);
-        }
-        if(this.x && this.y){
-            this.context.beginPath();
-            this.context.globalAlpha = 1.0;
-            this.context.lineWidth = 4;
-            this.context.strokeStyle = "red";
-            this.context.arc(this.x, this.y, 8, 2 * Math.PI, false);
-            this.context.closePath();
-            if(!this.z){
-                this.context.globalAlpha = 0.4;
-            }
-            else{
-                ;
-            }
-            this.context.stroke();
-            this.context.globalAlpha = 1.0;
-            
+            this.connectors[key].draw(this.context,x,y);
         }
     }
 
@@ -269,24 +160,19 @@ export class Simulator{
     }
 
     updateCanvas(x,y){
-        for(let key in this.wires){
-            if(this.wires[key].checkDelete()){
-                delete this.wires[key];
-            }
-        }
         for(let key in this.components){
             if(this.components[key].checkDelete()){
-                delete this.components[key];
+                delete this.components[key]
             }
         }
         for(let key in this.connectors){
             if(this.connectors[key].checkDelete()){
-                delete this.connectors[key];
+                delete this.connectors[key]
             }
         }
         for(let key in this.ports){
             if(this.ports[key].checkDelete()){
-                delete this.ports[key];
+                delete this.ports[key]
             }
         }
         let inputs = 0;
@@ -299,6 +185,11 @@ export class Simulator{
             else{
                 this.ports[key].setnum(outputs);
                 outputs++;
+            }
+        }
+        for(let key in this.wires){
+            if(this.wires[key].checkDelete()){
+                delete this.wires[key]
             }
         }
         this.renderCanvas(x,y);
