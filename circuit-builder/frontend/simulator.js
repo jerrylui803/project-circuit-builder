@@ -198,6 +198,7 @@ export class Simulator{
         if(this.selectedTool == TOOL.MOVE){
             this.gateHandler.handleMoveUp(x,y);
             this.portHandler.handleMoveUp(x,y,dx,dy);
+            api.uploadCanvas(ActionBuilder.buildAction(x,y,"ADD").setObject(Simulator.getJSON(this.components,this.connectors,this.wires,this.ports)));
         }
         api.uploadCanvas(ActionBuilder.buildAction(x,y,"MOUSE").setObject(false));
     }
