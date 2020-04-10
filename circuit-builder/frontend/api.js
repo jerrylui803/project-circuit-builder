@@ -25,9 +25,10 @@ let api = (function(){
         }
     }
 
+
     // TODO_2: so I guess don't need these functions and just use module.uploadCanvas()?
-    module.addComponent = function(type,componentID,canvasID,x,y){
-        console.log("adding component");
+    module.addComponent = function(component){
+
     }
 
     module.deleteComponent = function(componentID,canvasID){
@@ -54,9 +55,9 @@ let api = (function(){
     let signinListeners = [];
 
     socket.on('broadcast canvas', (data) => {
-        console.log("Got a SocketIO broadcase canvas from backend")
-        console.log(data)
-        console.log()
+        // console.log("Got a SocketIO broadcase canvas from backend")
+        // console.log(data)
+        // console.log()
         notifyCanvasListeners(null, null, data);
 
     });
@@ -282,8 +283,8 @@ let api = (function(){
 
 
     module.uploadCanvas = function(all) {
-        console.log("uploading canvas state");
-        console.log(all);
+        // console.log("uploading canvas state");
+        // console.log(all);
         //console.log(JSON.stringify(all));
         socket.emit('upload canvas', all);
 

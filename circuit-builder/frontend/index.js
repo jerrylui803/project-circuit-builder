@@ -89,20 +89,24 @@ $(document).ready(function(){
 
     $("#canvas").mousedown(function (e) {
         handleMouseDown(e);
+        //api.uploadCanvas(sim.getJSON());
     });
     $("#canvas").mousemove(function (e) {
         handleMouseMove(e);
         //api.uploadCanvas(sim.getJSON());
-        if ((lastExecution.getTime() + timeWindow) <= (new Date()).getTime()) {
-            lastExecution = new Date();
-            api.uploadCanvas(sim.getJSON());
-        }
+        //api.uploadCanvas(sim.getJSON());
+        // if ((lastExecution.getTime() + timeWindow) <= (new Date()).getTime()) {
+        //     lastExecution = new Date();
+        //     api.uploadCanvas(sim.getJSON());
+        // }
     });
     $("#canvas").mouseup(function (e) {
         handleMouseUp(e);
+        //api.uploadCanvas(sim.getJSON());
     });
     $("#canvas").mouseout(function (e) {
         handleMouseOut(e);
+        //api.uploadCanvas(sim.getJSON());
     });
     $(window).resize(function () {
         resize();
