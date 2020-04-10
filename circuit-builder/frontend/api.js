@@ -216,7 +216,7 @@ let api = (function(){
                         return notifyErrorListeners(err);
                     }
 
-                    let let ret = res;
+                    let ret = res;
                     ret[0].left_btn = false;
                     ret[0].right_btn = false;
                     if (startIndex > 0) {

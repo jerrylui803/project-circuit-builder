@@ -7,7 +7,7 @@ export class ConnectorHandler{
     }
 
     updateState(state){
-        
+        let connectors = state.connectors;
     }
 
     getJSON(){
