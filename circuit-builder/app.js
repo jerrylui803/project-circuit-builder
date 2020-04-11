@@ -322,6 +322,11 @@ io.on('connection', (socket) => {
             owner = roomInfo[0];
             title = roomInfo[1];
 
+            //Mouse action, do not query database or make connection.
+            if(myCanvas.action != "ADD"){
+                socket.broadcast.to(room).emit('broadcast canvas', myCanvas);
+                return;
+            }
             // No need to do additional checks for whether this user is allowed to modify this canvas or not,
             // because we have the socketID
 
@@ -329,6 +334,7 @@ io.on('connection', (socket) => {
                 if (err) throw err;
                 let dbo = db.db("mydb");
                 let diagrams = dbo.collection("diagrams");
+
 
                 // store this update to the canvas into the database
                 // diagrams.update({owner: owner, title: title},{owner: owner, title: title, canvas: myCanvas}, function(err){
@@ -345,25 +351,22 @@ io.on('connection', (socket) => {
                     // console.log(title)
                     // console.log(item)
 
-                    if(myCanvas.action == "ADD"){
-                        console.log("saving canvas");
-                        item['canvas'] = myCanvas.object;
-                        
-                        // Save the item with the additional field
-                        diagrams.save(item, {w: 1}, function(err, result) {
+                    
+                    console.log("saving canvas");
+                    item['canvas'] = myCanvas.object;
+                    
+                    // Save the item with the additional field
+                    diagrams.save(item, {w: 1}, function(err, result) {
 
-                            if (err) {
-                                console.log(err);
-                                io.to(socket.id).emit(err);
-                            }
-                            // Now tell everyone in this room to update their canvas
-                            socket.broadcast.to(room).emit('broadcast canvas', myCanvas);
-
-                        });
-                    }
-                    else{
+                        if (err) {
+                            console.log(err);
+                            io.to(socket.id).emit(err);
+                        }
+                        // Now tell everyone in this room to update their canvas
                         socket.broadcast.to(room).emit('broadcast canvas', myCanvas);
-                    }
+
+                    });
+                    
 
 
 

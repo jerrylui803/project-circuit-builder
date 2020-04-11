@@ -24,6 +24,17 @@ export class Simulator{
         this.portHandler = new PortHandler(this.action,this.ports,this.connectors,this.wires);
         this.wireHandler = new WireHandler(this.action,this.components,this.connectors,this.wires);
         this.connHandler = new ConnectorHandler(this.action,this.connectors,this.wires);
+
+        this.timeWindow = 50; // time in ms
+        this.lastExecution = new Date((new Date()).getTime() - this.timeWindow);
+    }
+
+    allowedUpdate(){
+        if ((this.lastExecution.getTime() + this.timeWindow) <= (new Date()).getTime()) {
+            this.lastExecution = new Date();
+            return true;
+        }
+        return false;
     }
 
     updateState(state){
@@ -228,7 +239,8 @@ export class Simulator{
             this.portHandler.handleMoveMove(dx,dy);
         }
         this.renderCanvas(x,y);
-        api.uploadCanvas(ActionBuilder.buildAction(x,y,"MOUSE").setObject(null));
+        if(this.allowedUpdate())
+            api.uploadCanvas(ActionBuilder.buildAction(x,y,"MOUSE").setObject(null));
     }
 
     renderCanvas(x,y){
