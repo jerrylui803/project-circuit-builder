@@ -1,5 +1,5 @@
 let api = (function(){
-    
+    "use strict";
     let module = {};
 
     let socket = io();
@@ -25,11 +25,26 @@ let api = (function(){
         }
     }
 
+    // TODO_2: so I guess don't need these functions and just use module.uploadCanvas()?
+    module.addComponent = function(type,componentID,canvasID,x,y){
+        console.log("adding component");
+    }
 
+    module.deleteComponent = function(componentID,canvasID){
 
+    }
 
+    module.moveComponent = function(type,componentID,canvasID,x,y){
 
+    }
 
+    module.addWire = function(wireID,startID,endID,canvasID){
+
+    }
+
+    module.deleteWire = function(wireID,canvasID){
+
+    }
 
 
     // CANVAS *************************************************************************
@@ -41,8 +56,6 @@ let api = (function(){
     socket.on('broadcast canvas', (data) => {
         console.log("Got a SocketIO broadcase canvas from backend")
         console.log(data)
-        
-        console.log()
         console.log()
         notifyCanvasListeners(null, null, data);
 
@@ -62,15 +75,16 @@ let api = (function(){
     module.signup = function(username, password){
         console.log("front end log", username, password)
         send("POST", "/signup/", {username, password}, function(err, res){
-             if (err) return notifyErrorListeners(err);
-             notifySigninListeners(getUsername());
+            console.log("AKLDHSFKLASDHLKAJSDLASKHDALSKJHLAKSHDLKASDLKJASHD")
+            if (err) return notifyErrorListeners(err);
+            notifySigninListeners(getUsername());
         });
     };
 
     module.signout = function(){
         send("GET", "/signout/", null, function(err, res) {
-             if (err) return notifyErrorListeners(err);
-             notifySigninListeners(getUsername());
+            if (err) return notifyErrorListeners(err);
+            notifySigninListeners(getUsername());
         });
     };
 
@@ -83,22 +97,28 @@ let api = (function(){
         //     displayGalleryOwner = getUsername();
         // }
 
+        console.log("ADD TGHE FUCKING CANVASA")
 
         send("POST", "/api/canvas/" , {title: title}, function(err, res) {
+            console.log("HELLO WHAT ???????????????");
             if (err) {
+                console.log("GOT AN ERROR")
+                console.log(err)
                 return notifyErrorListeners(err);
             } else {
 
+                console.log("Finished sending a new title")
 
                 notifyCanvasListListeners();
-                
+
                 // TODO: now to update canvas listeners?
                 // Don't think we need it here, maybe have to server broadcast over socket io?
                 // (so that the server triggers notifyImageListeners?)
-                
+
                 // notifyImageListeners();
             }
         });
+
     };
 
 
@@ -124,12 +144,12 @@ let api = (function(){
                 return notifyErrorListeners(err);
             } else {
 
-                
+
                 console.log("FINISH ADD SHARE USER")
                 // TODO: 
                 // maybe broadcast to the user that this canvas is being shared to
                 //
-                
+
                 // notifyImageListeners();
             }
         });
@@ -157,7 +177,7 @@ let api = (function(){
     // module.currUserIsCanvasOwner = (currCanvasOwner ===(getUsername()));
 
     // module.aaa222 = getUsername();
-    
+
 
     // Get the list of editible canvas for the current user.
     // Then pass this list to myHandler
@@ -181,11 +201,14 @@ let api = (function(){
         // Backend will determine the username using the cookie, so no need to send username
         send("GET", "/api/size/canvas", null, function(err, res) {
 
+            console.log("CANVAS LISST PAGE #: ", canvasListPage);
+
 
             if (err) {
                 return notifyErrorListeners(err);
             }
             let canvasCount = res.size;
+            console.log("CANVAS COUNT: ", canvasCount);
 
             // init canvasListPage 
             if (canvasCount > 0 && canvasListPage === -1) {
@@ -203,7 +226,11 @@ let api = (function(){
                         return notifyErrorListeners(err);
                     }
 
-                    ret = res;
+
+                    let ret = res;
+                    console.log("Logging the result from getting all the canvas titles")
+                    console.log(ret)
+                    console.log(ret)
                     ret[0].left_btn = false;
                     ret[0].right_btn = false;
                     if (startIndex > 0) {
@@ -219,8 +246,6 @@ let api = (function(){
                 myHandler([], username);
             }
         });
-
-
 
 
         // send("GET", "/api/size/user/", null, function(err, res) {
@@ -263,18 +288,45 @@ let api = (function(){
         // });
     };
 
-    
+    // update the list of editable canvas
+    module.onCanvasListUpdate = function(handler){
+        //console.log("module.onCanvasListUpdate running")
+        canvasListListeners.push(handler);
+        // TODO: get the list of canvas list listeners (pagnitaged), and call the handler
+
+        getCanvasList(handler);
+
+    }
+
+    module.getRightUser = function() {
+        console.log("RIGHT CLICK");
+        canvasListPage++;
+        notifyCanvasListListeners();
+    }
+
+    module.getLeftUser = function() {
+        console.log("LEFT CLICK");
+        canvasListPage--;
+        notifyCanvasListListeners();
+    }
+
+
     // Set module.getUsername as a variable so that index.js can reference its value
     module.getUsername = getUsername;
 
 
     module.uploadCanvas = function(all) {
-        console.log("IN API.js RIGHT BEFORE UPLOAD")
-        console.log(all)
-        socket.emit('upload canvas', all.gates, all.wires, all.connectors, all.gateID, all.connectorID);
+        console.log("uploading canvas state");
+        console.log(all);
+        //console.log(JSON.stringify(all));
+        socket.emit('upload canvas', all);
+
+        // TODO_2: remove this entire function, and replace it with the folling line,
+        // where "all" is a string
+        // socket.emit('upload canvas', all);
     }
 
-    
+
 
     module.switchCanvas = function(owner, title) {
         //let canvas = getCanvasData(owner, title);
@@ -285,9 +337,15 @@ let api = (function(){
         console.log(currCanvasOwner)
 
         console.log("in switch canvas")
-        //console.log(canvas)
-        //notifyCanvasListeners(canvas);
+
+
+        //notifyCanvasListeners will fetch the data to update canvas (from the backend)
         notifyCanvasListeners(owner, title, null);
+
+        //
+        socket.emit('switch canvas', owner, title);
+
+
         //TODO:
         // displayGalleryOwner = galleryOwner;
         // notifyImageListeners();
@@ -298,44 +356,37 @@ let api = (function(){
 
     let getCanvasData = function(owner, title, handler) {
 
-        console.log("running getCanvasData")
-        console.log(owner, title)
-        console.log("running getCanvasData done")
 
         send("POST", "/api/canvas/data/" + owner + "/" + title + "/", null, function(err, res) { //{owner: owner, title: title} , function(err, res) {
             if (err) {
                 return notifyErrorListeners(err);
             }
+            console.log("GOTTEN TEH CANVAS DATA")
+            console.log(res)
             // console.log("DONE!!!!!!!!!!!!!!!");
             // console.log(res)
             // console.log(typeof(res))
             // console.log(res.owner)
             // console.log(res.canvas)
             // 
-            handler(res.canvas, title, owner);
+            handler(res, title, owner);
         });
-
-
-
-
     }
 
+    /*
+    module.deleteCanvas = function(owner, title) {
+        send("DELETE", "/api/canvas/data/" + owner + "/" + title + "/", null, function(err, res) {
+            notifyCanvasListListeners();
+            notifyCanvasListeners();
+        });
+    }
+*/
 
     // update the canvas itself
     module.onCanvasUpdate = function(handler){
         canvasListeners.push(handler);
     }
 
-
-    // update the list of editable canvas
-    module.onCanvasListUpdate = function(handler){
-        //console.log("module.onCanvasListUpdate running")
-        canvasListListeners.push(handler);
-        // TODO: get the list of canvas list listeners (pagnitaged), and call the handler
-
-        getCanvasList(handler);
-
-    }
 
 
 
@@ -360,7 +411,7 @@ let api = (function(){
             } else {
                 console.log("SOMETHING WENT WRONG IN notifyCanvasListeners")
             }
-            
+
         });
     }
 
@@ -393,6 +444,10 @@ let api = (function(){
     module.onError = function(listener){
         errorListeners.push(listener);
     };
+
+
+
+
 
     return module;
 })();

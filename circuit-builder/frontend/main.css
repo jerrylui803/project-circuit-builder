@@ -93,26 +93,56 @@ img{
     font-size: 14px;
 }
 
+
 .left_btn{
     float: left;
+    margin: 5px;
+    text-align: center;
 }
 
 .right_btn{
     float: right;
+    padding: 5px;
+    text-align: center;
 }
+
+#right_user_btn {
+    padding-bottom: 30px;
+}
+
+#left_user_btn {
+    padding-bottom: 30px;
+}
+
+.del {
+   padding-left: 10px;
+    margin: none;
+}
+
+
+
 
 .gallery_owner_btn{
     margin-top: 5px;
     margin-bottom: 5px;
 }
 
+#canvas_list_display {
+    display: flex;
+    justify-content: center;
+    padding-top: 20px;
+    margin-left: 10px;
+    margin-right: 10px;
+}
+
+
 .left_right_btn_container{
     margin-top: 10px;
-
-    float:centre
-    width: 90%;
-    height: 40px;
+    float: center;
+    width: 100%;
+    height: 10%;
 }
+
 
 .hidden{
     visibility: collapse;

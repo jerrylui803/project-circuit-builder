@@ -1,33 +1,172 @@
-const CType = {
-    IN: 0,
-    OUT: 1
-}
+import {CONNECTOR,GATE,PORT,TOOL} from "./Enumeration.js";
 
-class Connector{
-    constructor(x, y, type, value, gateID){
-        this.x = x;
-        this.y = y;
-        this.d = connectorDiameter;
-        this.type = type;
-        this.value = value;
-        this.connectorID = connectorID++;
-        this.placed = false;
-        //keep track of parent gate
-        this.gateID = gateID;
+export class ConnectorHandler{
+    constructor(connectors,wires){
+        this.connectors = connectors;
+        this.wires = wires;
     }
 
-    destroyWires(){
-        //Iterate through wires and find those which are connected
-        for(let i = 0; i < wires.length; i++){
-            if(this.connectorID == wires[i].start.connectorID || this.connectorID == wires[i].end.connectorID){
-                wires.splice(i, 1);
+    updateState(state){
+        for(let key in this.connectors){
+            delete this.connectors[key];
+        }
+        let connectors = state.connectors;
+        for(let i = 0; i < connectors.length; i++){
+            let id = connectors[i].id;
+            let gateid = connectors[i].gateid;
+            let x = connectors[i].x;
+            let y = connectors[i].y;
+            let dx = connectors[i].dx;
+            let dy = connectors[i].dy;
+            let type = connectors[i].type;
+            let value = connectors[i].value;
+            let size = connectors[i].size;
+            //if(!this.connectors[id]){
+            //id,gateID,type,init,size,offsetX,offsetY
+            let newConnector = new Connector(id,gateid,type,value,size,dx,dy);
+            newConnector.updatePosition(x,y);
+            newConnector.setPlaced(true);
+            this.connectors[id] = newConnector;
+            //}
+        }
+    }
+
+    getJSON(){
+        let output = {};
+        let connectors = [];
+        for(let key in this.connectors){
+            if(this.connectors.hasOwnProperty(key)){
+                let curr = this.connectors[key];
+                let connector = {};
+                connector["id"] = curr.getID();
+                connector["gateid"] = curr.getGateID();
+                connector["x"] = Math.round((curr.getX()+Number.EPSILON)*1000)/1000;
+                connector["y"] = Math.round((curr.getY()+Number.EPSILON)*1000)/1000;
+                connector["dx"] = curr.getOffsetX();
+                connector["dy"] = curr.getOffsetY();
+                connector["type"] = curr.getType();
+                connector["value"] = curr.getValue();
+                connector["size"] = curr.getSize();
+                connectors.push(connector);
+            }
+        }
+        output["connectors"] = connectors;
+        return output;
+    }
+
+    updateConnectors(){
+        for(let key in this.connectors){
+            if(this.connectors.hasOwnProperty(key)){
+                let connected = false;
+                for(let k in this.wires){
+                    if(this.wires[k].getStart() != null && this.wires[k].getStart().getID() == this.connectors[key].getID()){
+                        connected = true;
+                    }
+                    else if(this.wires[k].getEnd() != null && this.wires[k].getEnd().getID() == this.connectors[key].getID()){
+                        connected = true;
+                    }
+                }
+                if(connected){
+                    this.connectors[key].setConnected(true);
+                }
+                else{
+                    this.connectors[key].setConnected(false);
+                    this.connectors[key].setValue(false);
+                }
+            }
+        }
+        //Add wires to each connector
+        for(let key in this.wires){
+            if(this.wires[key].getStart()){
+                let s = this.wires[key].getStart().getID();
+                this.connectors[s].addWire(this.wires[key]);
+            }
+            if(this.wires[key].getEnd()){
+                let e = this.wires[key].getEnd().getID();
+                this.connectors[e].addWire(this.wires[key]);
             }
         }
     }
 
+
+
+
+}
+
+
+
+export class Connector{
+
+    constructor(id,gateID,type,init,size,offsetX,offsetY){
+        this.id = id;
+        this.x = 0;
+        this.y = 0;
+        this.d = size;
+        this.type = type;
+        this.value = init;
+        this.placed = false;
+        this.connected = false;
+        this.offsetX = offsetX;
+        this.offsetY = offsetY;
+        this.wires = [];
+        this.toDelete = false;
+        this.gateID = gateID;
+    }
+    getSize(){
+        return this.d;
+    }
+
+    getGateID(){
+        return this.gateID;
+    }
+    
+    getID(){
+        return this.id;
+    }
+
+    getType(){
+        return this.type;
+    }
+
+    queueDelete(){
+        this.destroyWires();
+        this.toDelete = true;
+    }
+
+    checkDelete(){
+        return this.toDelete;
+    }
+
+    getWires(){
+        return this.wires;
+    }
+
+    addWire(wire){
+        let found = false;
+        for(let i = 0; i < this.wires.length; i++){
+            if(this.wires[i].getID() == wire.getID()){
+                found = true;
+            }
+        }
+        if(!found)
+            this.wires.push(wire);
+    }
+
+    removeWire(id){
+        for(let i = 0; i < this.wires.length; i++){
+            if(this.wires.getID() == id){
+                this.wires[i].queueDelete();
+            }
+        }
+    }
+
+    destroyWires(){
+        this.wires.forEach(wire => wire.queueDelete());
+    }
+
     updatePosition(x, y){
-        this.x = x;
-        this.y = y;
+        this.x = x+this.offsetX;
+        this.y = y+this.offsetY;
     }
 
     movePosition(x, y){
@@ -35,8 +174,16 @@ class Connector{
         this.y = this.y + y;
     }
 
+    setPlaced(value){
+        this.placed = value;
+    }
+
     setValue(value){
         this.value = value;
+    }
+
+    setConnected(value){
+        this.connected = value;
     }
 
     getValue(){
@@ -51,13 +198,22 @@ class Connector{
         return this.y;
     }
 
-    checkMouseHitbox(){
-        let a = currX - this.x;
-        let b = currY - this.y;
+    getOffsetX(){
+        return this.offsetX;
+    }
+
+    getOffsetY(){
+        return this.offsetY;
+    }
+
+    checkMouseHitbox(x,y){
+        let a = x - this.x;
+        let b = y - this.y;
         return (Math.sqrt((a*a) + (b*b)) < (this.d * 2));
     }
 
-    draw(){
+    // draw the connector
+    draw(c,x,y){
         if(!this.placed){
             c.globalAlpha = 0.4;
         }
@@ -66,9 +222,17 @@ class Connector{
         }
         c.beginPath();
         c.lineWidth = 4;
-        if(this.checkMouseHitbox()) c.strokeStyle = "red";
+        if(this.checkMouseHitbox(x,y)) c.strokeStyle = "cyan";
         else c.strokeStyle = "black";
         c.arc(this.x, this.y, this.d, 2 * Math.PI, false);
+        if(this.getValue()){
+            c.fillStyle = "yellow";
+            c.fill();
+        }
+        else{
+            c.fillStyle = "grey";
+            c.fill();
+        }
         c.closePath();
         c.stroke();
     }

@@ -4,14 +4,18 @@
 
 
 // Setup basic express server
-let express = require('express');
-let path = require('path');
-let helmet = require('helmet');
-let app = express();
-let fs = require("fs");
-let http = require("http");
-let https = require("https");
+const express = require('express');
+const app = express();
 
+// other dependencies
+const path = require('path');
+const helmet = require('helmet');
+const fs = require("fs");
+const http = require("http");
+const https = require("https");
+const sock = require("socket.io");
+
+// for parsing
 const bodyParser = require('body-parser');
 app.use(bodyParser.urlencoded({ extended: false }));
 app.use(bodyParser.json());
@@ -37,7 +41,6 @@ app.use(helmet());
 
 
 const session = require('express-session');
-
 const cookie = require('cookie');
 
 var RedisStore = require("connect-redis")(session);
@@ -72,19 +75,19 @@ if (process.env.NODE_ENV === 'production') {
         res.end();
     }).listen(port=80);
 
-    io = require('socket.io')(server)
+    io = sock(server)
 
     // execute using node app.js for dev work
 } else {
     console.log("this is development");
 
-    server = require('http').createServer(app);
+    server = http.createServer(app);
 
     server.listen(port, () => {
         console.log('Server listening at port %d', port);
     });
 
-    io = require('socket.io')(server)
+    io = sock(server)
 }
 
 
@@ -165,6 +168,7 @@ MongoClient.connect(url, function(err, db) {
 MongoClient.connect(url, function(err, db) {
     if (err) throw err;
     var dbo = db.db("mydb");
+    dbo.dropDatabase();
     dbo.createCollection("users", function(err, res) {
         if (err) throw err;
         console.log("Collection users created!");
@@ -278,7 +282,6 @@ let names = {};    // map socket.id => name
 let allUsers = {}; // map socket.id => socket
 
 
-
 io.on('connection', (socket) => {
 
 
@@ -297,29 +300,174 @@ io.on('connection', (socket) => {
     if (username) {
 
         // when the client emits 'upload canvas', this listens and executes
-        socket.on('upload canvas', (data1, data2, data3, data4, data5) => {
+        socket.on('upload canvas', (myCanvas) => {
+            console.log(names)
+            console.log(username)
+            console.log(socket.id)
 
-            // console.log("THIS IS THE socket ID: ", socket.id);
-            // we tell the client to execute
-            // console.log("received everything to redraw canvas")
-            // console.log(data1, data2, data3, data4, data5)
-            myGate = data1;
-            myWire = data2;
-            myConnector = data3;
-            myGateID = data4
-            myConnectorID = data5
-            let myCanvas = [myGate, myWire, myConnector, myGateID, myConnectorID]; 
-            let myCanvasJSON = JSON.stringify(myCanvas);
-            //console.log(myCanvasJSON)
+            //sanity check
+            if (names[socket.id] == null || !(names[socket.id] === username)) {
+                console.log("something went wrong in socketio upload canvas")
+                return;
+            }
 
-            socket.broadcast.emit('broadcast canvas', {
-                gate: myGate,
-                wire: myWire,
-                connector: myConnector,
-                gateID: myGateID,
-                connectorID: myConnectorID
+            let room = rooms[socket.id]
+
+            if (!room) {
+                console.log("something went wrong. this user hasn't select which canvas to update (this should not be possible)")
+                return;
+            }
+            console.log("In upload canvas: here is the canvas received: (as a string)");
+            console.log(typeof(myCanvas));
+            console.log(myCanvas);
+
+            let roomInfo = room.split('#');
+
+            owner = roomInfo[0];
+            title = roomInfo[1];
+
+            // No need to do additional checks for whether this user is allowed to modify this canvas or not,
+            // because we have the socketID
+
+            MongoClient.connect(url, function(err, db) {
+                if (err) throw err;
+                let dbo = db.db("mydb");
+                let diagrams = dbo.collection("diagrams");
+
+                // store this update to the canvas into the database
+                // diagrams.update({owner: owner, title: title},{owner: owner, title: title, canvas: myCanvas}, function(err){
+                //
+                // diagrams.update({owner: owner, title: title},{ canvas: "AAAAAAAAAA"}, function(err){
+                diagrams.findOne({owner: owner, title: title}, function(err, item){
+
+                    if (err) {
+                        console.log(err);
+                        io.to(socket.id).emit(err);
+                    }
+                    console.log("WHY IS IT NULL")
+                    console.log(owner)
+                    console.log(title)
+                    console.log(item)
+
+                    item['canvas'] = myCanvas;
+
+                    // Save the item with the additional field
+                    diagrams.save(item, {w: 1}, function(err, result) {
+
+                        if (err) {
+                            console.log(err);
+                            io.to(socket.id).emit(err);
+                        }
+
+                        // Now tell everyone in this room to update their canvas
+                        socket.broadcast.to(room).emit('broadcast canvas', myCanvas);
+
+
+
+
+
+
+
+
+
+
+
+
+
+                    });
+
+
+
+                });
             });
         });
+
+
+        console.log("does it wait?")
+
+        socket.on('switch canvas', (owner, title) => {
+
+            console.log("SOCKET SWITCH CANVAS IS NOT IMPLEMENTED")
+
+            //TODO: IMPLEMENT THIS 
+
+
+            // We need to check the relationship between 'username', 'owner' and 'title'
+            // username and owner might not be the same!
+            MongoClient.connect(url, function(err, db) {
+                if (err) throw err;
+                let dbo = db.db("mydb");
+
+                // TODO: First check if this user (base on cookie) is authorized to access this canvas or not
+                let diagramShare = dbo.collection("diagramShare");
+
+                diagramShare.findOne({title: title, owner: owner, shareUsername: username}, function(err, shareWith){
+                    // if (err) return res.status(500).end(err);
+                    if (err) {
+                        console.log(err);
+                        io.to(socket.id).emit(err);
+                    }
+
+                    if (shareWith) {
+                        // This user is allow to switch to this canvas, record the socket id,
+                        // and send future updates to this canvas to this user 
+
+                        // First check if this user was in some other room. If so, then remove this 
+                        // user from the previous room first
+                        if (rooms[socket.id]) {
+
+                            if (!allUsers[socket.id]) {
+                                console.log("SOMETHING WENT WRONG!!! THIS USER JOINED A ROOM BUT WE DONT KNOW THE USERNAME")
+                            }
+
+                            let prevRoom = rooms[socket.id];
+                            socket.leave(prevRoom);
+
+                            // clean up (even though we are over writing immediately after)
+                            rooms[socket.id] = null;
+                            allUsers[socket.id] = null;
+                        }
+
+
+                        names[socket.id] = username;
+
+                        // TODO: add check to owner and title that it cannot contain the special character '#'
+                        allUsers[socket.id] = socket;
+                        let room = owner + '#' + title;
+                        socket.join(room);
+                        // register rooms to their names
+                        rooms[socket.id] = room;
+
+
+                        let diagrams = dbo.collection("diagrams");
+
+                        diagrams.findOne({owner: owner , title: title}, {canvas :1}, function(err, diagram) {
+                            if (err) throw err;
+                            else {
+                                console.log("Found the canvas , about to return the canvas through socketio, logging the canvas(string)")
+                                console.log(owner)
+                                console.log(title)
+                                console.log(diagram)
+                                io.to(socket.id).emit(diagram.canvas);
+                            }
+                        })
+
+                    } else {
+                        // return res.status(500).end("access denied. You are not allowed to switch to this canvas");
+                        console.log("access denied. You are not allowed to switch to this canvas");
+                        io.to(socket.id).emit("access denied. You are not allowed to switch to this canvas");
+                    }
+                });
+
+            });
+        });
+
+
+
+
+
+
+
     } else {
         console.log("Unauthenicated user is attempting to connect!")
     }
@@ -466,7 +614,10 @@ app.post('/api/canvas/', isAuthenticated, function (req, res, next) {
                     let diagramShare = dbo.collection("diagramShare");
 
                     diagramShare.insertOne(new Share(username, title, username), function (err, item) {
+                        console.log("WE ARE DONE!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
+                        console.log(err)
                         if (err) return res.status(500).end(err);
+                        else return res.json("title " + username + " created");
                     });
 
                     // console.log('broast cast   1')
@@ -510,9 +661,6 @@ app.get('/api/size/canvas', isAuthenticated, function (req, res, next) {
         let dbo = db.db("mydb");
         let diagrams = dbo.collection("diagrams");
 
-
-
-
         dbo.collection('diagramShare').aggregate([
             {$match:
                 {'shareUsername': username}
@@ -543,7 +691,6 @@ app.get('/api/size/canvas', isAuthenticated, function (req, res, next) {
         ]).toArray(function(err, count) {
             console.log("printing in size function")
             console.log(count)
-
 
             if (err) {
                 return res.status(500).end(err);
@@ -576,6 +723,9 @@ app.get('/api/canvas/title/:startIndex/:canvasLength', isAuthenticated, function
     let startIndex = parseInt(req.params.startIndex);
     let canvasLength = parseInt(req.params.canvasLength);
 
+    console.log("START: ", startIndex);
+    console.log("CI: ", canvasLength);
+
     MongoClient.connect(url, function(err, db) {
         if (err) throw err;
         let dbo = db.db("mydb");
@@ -593,9 +743,6 @@ app.get('/api/canvas/title/:startIndex/:canvasLength', isAuthenticated, function
 
 
         console.log("test1")
-
-
-
 
         // https://kb.objectrocket.com/mongo-db/how-to-use-the-lookup-function-in-mongodb-1277
 
@@ -623,17 +770,18 @@ app.get('/api/canvas/title/:startIndex/:canvasLength', isAuthenticated, function
                 }
             }
             ,
-            { $sort : { owner : 1, title: 1 }},
+            { $sort : { owner: 1, title: 1 }},
             { $skip : startIndex },
             { $limit: canvasLength},
             { $project: { "title": 1, "owner": 1, _id: 0 }}
         ]).toArray(function(err, canvasList) {
-            console.log("CHECK THIS")
-            console.log(typeof(canvasList[0].temp))
-            console.log(canvasList)
+            // console.log("CHECK THIS")
+            // console.log(typeof(canvasList[0].temp))
+            // console.log(canvasList)
 
             if (err) return res.status(500).end(err);
-            return res.json(canvasList)
+            console.log("CANVAS LIST: ", canvasList);
+            return res.json(canvasList.reverse());
         });
 
 
@@ -710,7 +858,9 @@ app.post('/api/canvas/data/:owner/:title', isAuthenticated, function (req, res, 
             diagramShare.findOne({title: title, owner: owner, shareUsername: username}, function(err, shareWith){
                 if (err) return res.status(500).end(err);
                 if (shareWith) {
-                    return canvas.data
+                    console.log("ASDIHOASDHASIO(DHASOID:")
+                    console.log(canvas.canvas);
+                    return res.json(canvas.canvas);
                 } else {
                     return res.status(500).end("access denied");
                 }
@@ -718,16 +868,54 @@ app.post('/api/canvas/data/:owner/:title', isAuthenticated, function (req, res, 
 
 
 
-            return res.json(canvas)
+            // return res.json(canvas)
         });
 
     });
 
 });
 
+/*
+app.delete('/api/canvas/data/:owner/:title', isAuthenticated, function(req, res, next) {
+    
+    let username = req.user._id;
+    let owner = (req.params.owner);
+    let title = (req.params.title);
 
 
+    MongoClient.connect(url, function(err, db) {
+        if (err) throw err;
+        let dbo = db.db('mydb');
 
+        let diagrams = dbo.collection("diagrams");
+        let diagramShare = dbo.collection("diagramShare");
+
+
+        diagrams.findOne({title: title, owner: owner}, function(err, canvas){
+
+            // only owner can delete diagram
+            if (username != owner) return res.status(401).end(err);
+
+            // if diagram does not exist
+            if (!canvas) return res.status(404).end(err);
+
+            // delete the diagram
+            diagrams.deleteOne({title: title, owner: owner}, function(err, canvas1) {
+                if (err) throw err;
+                console.log("Diagram deleted.");
+
+                // also delete all associated diagram shares if it exists
+                diagramShare.deleteMany({title: {$in: [title]}, owner: {$in: [owner]}}, function(err, canvas2) {
+                    if (err) throw err;
+                    console.log("Diagram Share deleted.");
+                });
+            });
+
+            return res.json(canvas)
+        });
+    });
+});
+*/
 
 
 app.post('/api/user/share/', isAuthenticated, function (req, res, next) {

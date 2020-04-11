@@ -1,9 +1,82 @@
-class WireManager{
-    constructor(){
-        wires = [];
+import {Connector} from "./Connector.js";
+import {fold,or,and,xor,uuidv4,pDistance} from "./Functions.js";
+import {CONNECTOR,GATE,PORT,TOOL} from "./Enumeration.js";
+
+export class WireHandler{
+    constructor(components,connectors,wires){
+        this.components = components;
+        this.connectors = connectors;
+        this.wires = wires;
         this.hover = null;
         this.drawing = false;
-        this.invalid = null;
+    }
+    updateState(state){
+        for(let key in this.wires){
+            delete this.wires[key];
+        }
+        let hover = state.hover;
+        //ignore hover and moving for now
+        //create any new components not seen before
+        let wires = state.wires;
+        for(let i = 0; i < wires.length; i++){
+            let id = wires[i].id;
+            let start = wires[i].start;
+            let end = wires[i].end;
+            let x = wires[i].startx;
+            let y = wires[i].starty;
+            if(!start || !end){
+                // let b;
+                // if(start){
+                //     let newWire = newWire(id,start,null);
+                // }
+                // else{
+                //     let newWire = newWire(id,null,end);
+                // }
+
+            }
+            else{
+                let newWire = new Wire(id,this.connectors[start],this.connectors[end]);
+                this.wires[id] = newWire;
+            }
+            
+        }
+
+        
+
+    }
+
+
+    getJSON(){
+        let output = {};
+        //The hover and drawing of this user
+        output["hover"] = this.hover;
+        output["drawing"] = this.drawing;
+        let wires = [];
+        for(let key in this.wires){
+            if(this.wires.hasOwnProperty(key)){
+                let curr = this.wires[key];
+                let wire = {};
+                wire["id"] = curr.getID();
+                if(curr.getStart() && curr.getEnd()){
+                    wire["start"] = curr.getStart().getID();
+                    wire["end"] = curr.getEnd().getID();
+                }
+                else{
+                    //the wire is being hovered
+                    wire["startx"] = curr.getX();
+                    wire["starty"] = curr.getY();
+                    if(curr.getStart()){
+                        wire["end"] = curr.getStart().getID();
+                    }
+                    else{
+                        wire["end"] = curr.getEnd().getID();
+                    }
+                }
+                wires.push(wire);
+            }
+        }
+        output["wires"] = wires;
+        return output;
     }
 
     //Checks if a wire can be started from this connection
@@ -11,18 +84,19 @@ class WireManager{
     //the connector is an output type
     //the connector is an input type and has no other wires connected
     checkConnectable(connector){
-        if(connector.type == CType.OUT){
+        if(connector.type == CONNECTOR.OUT){
             return true;
         }
         //Input type connector, check if it has any wires already connected
         else{
+            //console.log("input type connector");
             //Loop through all wires, check if this connector already has wire
-            for(let i = 0; i < wires.length; i++){
-                let curr = wires[i]
+            for(let key in this.wires){
+                let curr = this.wires[key];
                 //If connector already has a connection
                 //This only works because the current drawn wire is not in wires[]
                 //If it is there is possibility of null ptr!!!!
-                if(curr.start.connectorID == connector.connectorID){
+                if(curr.getID() && curr.getID() !== this.hover && curr.getEnd().getID() == connector.getID()){
                     return false;
                 }
             }
@@ -36,21 +110,21 @@ class WireManager{
     //the connection has no wires already connected if it is of type input
     checkValid(wire, connector){
         //Wire is the wire we want to connect to potential connector
-        let conGateID = connector.gateID;
+        let conGateID = connector.getGateID();
         let wireStart = null;
-        if(wire.start){
-            wireStart = wire.start; //start is of type connector
+        if(wire.getStart()){
+            wireStart = wire.getStart(); //start is of type connector
         }
         else{
-            wireStart = wire.end; //end is of type connector
+            wireStart = wire.getEnd(); //end is of type connector
         }
-        let wireGateID = wireStart.gateID;
+        let wireGateID = wireStart.getGateID();
         //Check if wire connects to any other connections with same gateID as itself
         if(conGateID == wireGateID){
             return false;
         }
         //Check if the wire connents to its opposite type
-        if(wireStart.type == connector.type){
+        if(wireStart.getType() == connector.getType()){
             return false;
         }
         //Check if the connection already has a wire
@@ -60,102 +134,178 @@ class WireManager{
     //assumed that the user does not want to draw a wire
     checkCancel(wire, connector){
         let wireStart = null;
-        if(wire.start){
-            wireStart = wire.start; //start is of type connector
+        if(wire.getStart()){
+            wireStart = wire.getStart(); //start is of type connector
         }
         else{
-            wireStart = wire.end; //end is of type connector
+            wireStart = wire.getEnd(); //end is of type connector
         }
-        return (wireStart.connectorID == connector.connectorID);
+        return (wireStart.getID() == connector.getID());
     }
 
-    handleMouseDown(){
-        if(tool == "EDGE"){
-            //Find out which connector the user is trying to draw a wire from.
-            //Loop through all connector nodes
-            //If not drawing currently, then start drawing, create new wire
-            if(!this.drawing){
-                for(var key in connectors){
-                    if(connectors.hasOwnProperty(key) && 
-                    connectors[key].checkMouseHitbox() && 
-                    this.checkConnectable(connectors[key])){
-                        //If wire is being drawn backwards (output to input)
-                        //switch the start and end connectors
-                        if(connectors[key].type == CType.IN){
-                            this.hover = new Wire(connectors[key], null);
-                        }
-                        else{
-                            this.hover = new Wire(null, connectors[key]);
-                        }
-                        console.log("creating new wire at",connectors[key]);
-                        this.drawing = true;
-                        break;
-                    }   
-                }
+    handleWireDown(x,y){
+        if(!this.drawing){
+            for(let key in this.connectors){
+                if(this.connectors.hasOwnProperty(key) && 
+                this.connectors[key].checkMouseHitbox(x,y) && 
+                    this.checkConnectable(this.connectors[key]) &&
+                    this.connectors[key] != this.connectors[this.hover]){
+                    //If wire is being drawn backwards (output to input)
+                    //switch the start and end connectors
+                    if(this.connectors[key].getType() == CONNECTOR.IN){
+                        let newWire = new Wire(uuidv4() ,null, this.connectors[key]);
+                        console.log("creating new wire id",newWire.getID());
+                        this.wires[newWire.getID()] = newWire;
+                        this.hover = newWire.getID();
+                    }
+                    else{
+                        let newWire = new Wire(uuidv4(), this.connectors[key], null);
+                        console.log("creating new wire id",newWire.getID());
+                        this.wires[newWire.getID()] = newWire;
+                        this.hover = newWire.getID();
+                    }
+                    console.log("creating new wire at",this.connectors[key]);
+                    this.drawing = true;
+                    break;
+                }   
             }
-            else{
-                let cancel = true;
-                for(var key in connectors){
-                    if(connectors.hasOwnProperty(key) && connectors[key].checkMouseHitbox()){
-                        console.log("HIT!");
-                        cancel = false;
-                        if(this.drawing && this.checkValid(this.hover,connectors[key])){
-                            this.hover.setEndpoint(connectors[key]);
-                            wires.push(this.hover);
-                            console.log(wires);
-                            this.hover = null;
-                            this.drawing = false;
-                            break;
-                        }
+        }
+        else{
+            let cancel = true;
+            for(let key in this.connectors){
+                if(this.connectors.hasOwnProperty(key) && this.connectors[key].checkMouseHitbox(x,y)){
+                    console.log("HIT!");
+                    cancel = false;
+                    if(this.checkCancel(this.wires[this.hover],this.connectors[key])){
+                        this.cancelWire();
+                        console.log("cancelling wire");
+                        break;
+                    }
+                    if(this.drawing && this.checkValid(this.wires[this.hover],this.connectors[key])){
+                        this.wires[this.hover].setEndpoint(this.connectors[key]);
+                        this.hover = null;
+                        this.drawing = false;
+                        console.log("Connected endpoint");
+                        break;
                     }
                 }
-                if(cancel){
-                    console.log("MISS!");
-                    this.hover = null;
-                    this.drawing = false;
-                }
             }
 
-            
+            if(cancel){
+                console.log("MISS!");
+                this.cancelWire();
+            }
         }
-        for(let i = 0; i < wires.length; i++){
-            wires[i].draw();
-        }
-        if(this.hover){
-            this.hover.draw();
-        }
-        
     }
-    handleMouseUp(){
-
-    }
-    handleMouseMove(){
-        for(let i = 0; i < wires.length; i++){
-            wires[i].draw();
-        }
-        if(this.hover){
-            this.hover.draw();
-        }   
+    cancelWire(){
+        if(this.hover)
+            delete this.wires[this.hover];
+        this.hover = null;
+        this.drawing = false;
     }
 
-
+    handleDeleteDown(x,y){
+        for(let key in this.wires){
+            if(this.wires[key].checkMouseHitbox(x,y)){
+                delete this.wires[key];
+            }
+        }
+    }
 }
 
+export class Node{
+    constructor(x,y){
+        this.x = x;
+        this.y = y;
+    }
+    updatePoint(x,y){
+        this.x = x;
+        this.y = y;
+    }
+}
 
-
-
-class Wire{
-    constructor(start, end){
-        this.start = start; //Will always be of type IN
-        this.end = end; //Will always be of type OUT
-        this.value
+export class Wire{
+    constructor(id,start,end){
+        console.log("MAKE NEW WIRE");
+        this.id = id;
+        this.start = start;
+        this.end = end;
+        this.toDelete = false;
+        this.lineWidth = 14;
+        let x, y;
         if(this.start){
-            this.value = this.start.getValue();
+            x = this.start.x;
+            y = this.start.y;
         }
         else{
-            this.value = 0;
+            x = this.end.x;
+            y = this.end.y;
         }
+        this.nodes = [];
+        this.nodes.push(new Node(x,y));
+        this.nodes.push(new Node(x,y));
+        this.hx = -1;
+        this.hy = -1;
         
+    }
+    getX(){
+        return this.hx;
+    }
+    getY(){
+        return this.hy;
+    }
+    getID(){
+        return this.id;
+    }
+    getStart(){
+        return this.start;
+    }
+
+    getEnd(){
+        return this.end;
+    }
+    setStart(start){
+        this.start = start;
+    }
+
+    updateValue(){
+        if(!this.start || !this.end)
+            return
+        this.value = this.start.getValue();
+        this.end.setValue(this.start.getValue());
+    }
+
+
+
+    queueDelete(){
+        this.toDelete = true;
+    }
+
+    checkDelete(){
+        return this.toDelete;
+    }
+
+    checkMouseHitbox(x,y){
+        if(!this.start || !this.end){
+            return false;
+        }
+
+        let startx = this.start.getX();
+        let starty = this.start.getY();
+
+        let x0 = this.nodes[0].x;
+        let y0 = this.nodes[0].y;
+
+        let endx = this.end.getX();
+        let endy = this.end.getY();
+
+        let x1 = this.nodes[1].x;
+        let y1 = this.nodes[1].y;
+
+        if(pDistance(x,y,startx,starty,x0,y0) <= this.lineWidth) return true;
+        if(pDistance(x,y,x0,y0,x1,y1) <= this.lineWidth) return true;
+        if(pDistance(x,y,x1,y1,endx,endy) <= this.lineWidth) return true;
+        return false;
     }
 
     setEndpoint(end){
@@ -167,23 +317,103 @@ class Wire{
         }
     }
 
+    calculateNodePos(x1,y1,x2,y2){
+        let meanX = (x1 + x2)/2;
+        let meanY = (y1+y2)/2;
 
-    draw(){
-        c.strokeStyle = "black";
-        c.beginPath();
-        if(this.start && !this.end){
-            c.moveTo(this.start.getX(), this.start.getY());
-            c.lineTo(currX, currY);
-        }
-        else if(!this.start && this.end){
-            c.moveTo(this.end.getX(), this.end.getY());
-            c.lineTo(currX, currY);
+        if(x1 < x2){
+            this.nodes[0].x = meanX;
+            this.nodes[1].x = meanX;
+            this.nodes[0].y = y1;
+            this.nodes[1].y = y2;
         }
         else{
-            c.moveTo(this.start.getX(), this.start.getY());
-            c.lineTo(this.end.getX(), this.end.getY());
+            this.nodes[0].x = x1;
+            this.nodes[1].x = x2;
+            this.nodes[0].y = meanY;
+            this.nodes[1].y = meanY;
         }
+        // if($("#wiretype").is(':checked')) { 
+        //     this.nodes[0].x = x1;
+        //     this.nodes[1].x = x2;
+        //     this.nodes[0].y = y1;
+        //     this.nodes[1].y = y2;
+        // } else { 
+
+        // } 
+        // this.nodes[0].x = x1;
+        // this.nodes[1].x = x2;
+        // this.nodes[0].y = y1;
+        // this.nodes[1].y = y2;
+
+    }
+    updateHover(x,y){
+        if(!this.start || !this.end){
+            this.hx = x;
+            this.hy = y;
+        }
+    }
+
+    draw(c,x,y){
+        c.strokeStyle = "black";
+        c.beginPath();
+        if(!this.start || !this.end){
+            c.globalAlpha = 0.4;
+        }
+        else{
+            c.globalAlpha = 1.0;
+        }
+        let x1, x2, y1, y2;
+        this.updateHover(x,y);
+        if(this.start && !this.end){
+            x1 = this.start.getX();
+            y1 = this.start.getY();
+            x2 = x;
+            y2 = y;
+        }
+        else if(!this.start && this.end){
+            x2 = this.end.getX();
+            y2 = this.end.getY();
+            x1 = x;
+            y1 = y;
+        }
+        else{
+            x1 = this.start.getX();
+            y1 = this.start.getY();
+            x2 = this.end.getX();
+            y2 = this.end.getY();
+        }
+        this.calculateNodePos(x1,y1,x2,y2);
+        c.lineJoin = "round";
+        c.lineCap = "round";
+        c.lineWidth = this.lineWidth;
+        if(this.checkMouseHitbox(x,y)){
+            c.strokeStyle = "cyan";
+        }
+        else{
+            c.strokeStyle = "black";
+        }
+        c.moveTo(x1, y1);
+        //c.lineTo(x2, y2);
+        for(let i = 0; i < this.nodes.length; i++){
+            c.lineTo(this.nodes[i].x,this.nodes[i].y);
+        }
+        c.lineTo(x2, y2);
         c.stroke();
+        c.closePath();
+        c.lineWidth = this.lineWidth/2;
+        //if(this.checkMouseHitbox()) c.strokeStyle = "blue";
+        if(this.value) c.strokeStyle = "yellow";
+        else c.strokeStyle = "grey";
+        c.beginPath();
+        c.moveTo(x1, y1);
+        for(let i = 0; i < this.nodes.length; i++){
+            c.lineTo(this.nodes[i].x,this.nodes[i].y);
+        }
+        c.lineTo(x2, y2);
+        //c.lineTo(x2, y2);
+        c.stroke();
+        c.closePath();
     }
 
 
