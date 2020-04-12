@@ -791,6 +791,7 @@ MongoClient.connect(url, function(err, db) {
         let dbo = db.db("mydb");
         let diagrams = dbo.collection("diagrams");
 
+
         dbo.collection('diagramShare').aggregate([
             // {$match:
             //     {'shareUsername': username}
@@ -816,6 +817,14 @@ MongoClient.connect(url, function(err, db) {
                 }
             }
             ,
+
+            { $match :
+                { owner: username}
+            }
+            ,
+
+
+
             { $match : 
                 {
                     'shareUsername': {
@@ -859,6 +868,8 @@ MongoClient.connect(url, function(err, db) {
         let userLength = parseInt(req.params.userLength);
         console.log("LOGGING IN UNSHARE")
 
+        console.log(username);
+
         let title = (req.body.title);
 
         if (err) throw err;
@@ -897,6 +908,11 @@ MongoClient.connect(url, function(err, db) {
                     ],
                     as: "temp"
                 }
+            }
+            ,
+
+            { $match : 
+                { owner: username}
             }
             ,
             { $match : 
@@ -1007,18 +1023,9 @@ MongoClient.connect(url, function(err, db) {
             console.log(canvas)
 
 
-
-
-
-
             return res.json(canvas)
         });
     });
-
-
-
-
-
 
 
 
@@ -1108,15 +1115,26 @@ MongoClient.connect(url, function(err, db) {
 
                 let diagramShare = dbo.collection("diagramShare");
 
+                diagramShare.findOne({owner: username , title: title, shareUsername: targetUsername}, function(err, myItem) {
 
-                diagramShare.insertOne(new Share(username, title, targetUsername), function (err, item) {
-                    console.log(err)
-                    console.log(item)
-                    console.log("ALL DONE !!!!!!!!!!!!!!!!!!!")
+                    if (myItem) {
+                        console.log("This diagram is already being shared to this user.")
+                    } else {
 
-                    if (err) return res.status(500).end(err);
+                        console.log("This diagram is not yet shared with this user")
+                        console.log(username)
+                        console.log(title)
+                        console.log(targetUsername)
 
+                        diagramShare.insertOne(new Share(username, title, targetUsername), function (err, item) {
+                            console.log(err)
+                            console.log(item)
+                            console.log("ALL DONE !!!!!!!!!!!!!!!!!!!")
 
+                            if (err) return res.status(500).end(err);
+                            else return res.json(item)
+                        });
+                    }
                 });
 
 

@@ -9,6 +9,7 @@ let api = (function(){
     let currCanvasOwner;
 
 
+    //console.log("API JS IS RELOADED!@#)_!@(#_)!@UFJANOISDJASOIDJAPSIODJAPOSDJOPAISDJOPAIDA")
 
 
     function send(method, url, data, callback){
@@ -145,6 +146,7 @@ let api = (function(){
                 return notifyErrorListeners(err);
             } else {
 
+                notifyUnshareListListeners();
 
                 console.log("FINISH ADD SHARE USER")
                 // TODO: 
@@ -172,10 +174,18 @@ let api = (function(){
         return document.cookie.replace(/(?:(?:^|.*;\s*)username\s*\=\s*([^;]*).*$)|^.*$/, "$1");
     };
 
+    module.getCurrTitle = function() {
+        return currCanvasTitle;
+    }
 
-    module.getCurrCanvasTitle = currCanvasTitle;
+    module.getCurrOwner = function() {
+        return currCanvasOwner;
+    }
 
-    module.getCurrCanvasOwner = currCanvasOwner;
+
+    // module.getCurrCanvasTitle = currCanvasTitle;
+
+    // module.getCurrCanvasOwner = currCanvasOwner;
 
     // module.currUserIsCanvasOwner = (currCanvasOwner ===(getUsername()));
 
@@ -266,8 +276,10 @@ let api = (function(){
         console.log(username)
         console.log(currCanvasOwner)
 
+
         // If user hasn't login or is not the owner of the current display canvas
         if (username === "" || username != currCanvasOwner) {
+            console.log("FAIL 1")
             return myHandler(null, "");
         }
 
@@ -294,6 +306,7 @@ let api = (function(){
             }
             // If there are no editable canvas 
             if (unshareListPage === -1) {
+            console.log("FAIL 2")
                 return myHandler(null, "");
             }
             if (userCount != 0) {
@@ -319,6 +332,8 @@ let api = (function(){
                         ret[0].right_btn = true;
                     }
                     // Note that getUsername() might not be the same user as displayGalleryOwner
+                    console.log("ABOUT TEH CALL  THE UNSHARE ANDLER")
+                    console.log(ret)
                     myHandler(ret, username);
                 });
             } else {
@@ -349,6 +364,17 @@ let api = (function(){
     }
 
 
+    module.selectCanvas = function(owner, title) {
+
+        console.log("SELECTED CANVAS")
+        console.log(owner)
+        console.log(title)
+        currCanvasTitle = title;
+        currCanvasOwner = owner;
+
+        notifyUnshareListListeners();
+
+    }
 
     module.switchCanvas = function(owner, title) {
         //let canvas = getCanvasData(owner, title);

@@ -5,6 +5,13 @@
         <link rel="stylesheet" href="index.css">
         <link rel="stylesheet" href="main.css">
         <meta charset="UTF-8">
+
+        <div class="topnav">
+            <!--<a href="./canvas.html" id="canvas_page">Canvas</a>-->
+            <a class="active" id="menu_page">Menu</a>
+            <a id="canvas_page">Canvas</a>
+        </div>
+
         <a href="/login.html" id="signin_button" class="btn header_btn hidden">Sign in or Sign up</a>
         <a href="/signout/" id="signout_button" class="btn header_btn hidden">Sign out</a>
         <title>Canvas</title>
@@ -12,105 +19,10 @@
         <a id="current_canvas_info"></a>
     </head>
     <body>
-        <div id="myCanvas" class="hidden">
-            <div id="downlog">down: </div>
-            <div id="uplog">up: </div>
-            <div id="movelog">move: </div>
-            <div id="outlog">out: </div>
-            <!--<img id="image" src="https://picsum.photos/100/100"/>-->
-            <div class="row">
-                <!--<div class="col"></div>-->
-                <div class="col">
-                    <div class="row">
-                        <img id="INPUT" src="media/LogicInput.svg"/>
-                    </div>
-                    <div class="row">
-                        <button type="button" class="btn btn-primary button-in">INPUT</button>
-                    </div>
-                </div>
-                <div class="col">
-                    <div class="row">
-                        <img id="OUTPUT" src="media/LogicOutput.svg"/>
-                    </div>
-                    <div class="row">
-                        <button type="button" class="btn btn-primary button-out">OUTPUT</button>
-                    </div>
-                </div>
-                <div class="col">
-                    <div class="row">
-                        <img id="NOT-GATE" src="media/NOT.svg"/>
-                    </div>
-                    <div class="row">
-                        <button type="button" class="btn btn-secondary button-not">NOT</button>
-                    </div>
-                </div>
-                <div class="col">
-                    <div class="row">
-                        <img id="AND-GATE" src="media/AND.svg"/>
-                    </div>
-                    <div class="row">
-                        <button type="button" class="btn btn-secondary button-and">AND</button>
-                    </div>
-                </div>
-                <div class="col">
-                    <div class="row">
-                        <img id="NAND-GATE" src="media/NAND.svg"/>
-                    </div>
-                    <div class="row">
-                        <button type="button" class="btn btn-secondary button-nand">NAND</button>
-                    </div>
-                </div>
-                <div class="col">
-                    <div class="row">
-                        <img id="OR-GATE" src="media/OR.svg"/>
-                    </div>
-                    <div class="row">
-                        <button type="button" class="btn btn-secondary button-or">OR</button>
-                    </div>
-                </div>
-                <div class="col">
-                    <div class="row">
-                        <img id="NOR-GATE" src="media/NOR.svg"/>
-                    </div>
-                    <div class="row">
-                        <button type="button" class="btn btn-secondary button-nor">NOR</button>
-                    </div>
-                </div>
-                <div class="col">
-                    <div class="row">
-                        <img id="XOR-GATE" src="media/XOR.svg"/>
-                    </div>
-                    <div class="row">
-                        <button type="button" class="btn btn-secondary button-xor">XOR</button>
-                    </div>
-                </div>
-                <div class="col">
-                    <div class="row">
-                        <img id="XNOR-GATE" src="media/XNOR.svg"/>
-                    </div>
-                    <div class="row">
-                        <button type="button" class="btn btn-secondary button-xnor">XNOR</button>
-                    </div>
-                </div>
 
-            </div>
-            <div class="form-group">
-                <label for="formControlRange">Simulation Speed (ms)</label>
-                <input type="range" value="10" min="1" max="100" class="form-control-range" id="slider1">
-            </div>
-            </br>
-            <!--<button type="button" class="btn btn-primary button-add">Add</button>-->
-            <button type="button" class="btn btn-danger button-remove">remove</button>
-            <button type="button" class="btn btn-success button-move">move</button>
-            <button type="button" class="btn btn-success button-edge">edge</button>
-            wiretype<input type="checkbox" checked data-toggle="toggle" id="wiretype">
-            </br>
-            <canvas id="canvas" class="canvas"></canvas>
-            <script src="https://code.jquery.com/jquery-3.3.1.slim.min.js" integrity="sha384-q8i/X+965DzO0rT7abK41JStQIAqVgRVzpbzo5smXKp4YfRvH+8abtTE1Pi6jizo" crossorigin="anonymous"></script>
-            <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.7/umd/popper.min.js" integrity="sha384-UO2eT0CpHqdSJQ6hJty5KVphtPhzWj9WO1clHTMGa3JDZwrnQq4sF86dIHNDz0W1" crossorigin="anonymous"></script>
-            <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/js/bootstrap.min.js" integrity="sha384-JjSmVgyd0p3pXB1rRibZUAYoIIy6OrQ6VrjIEaFf/nJGzIxFDsf4x0xIM+B07jRM" crossorigin="anonymous"></script>
-            <script src="/socket.io/socket.io.js"></script>
-        </div>
+
+
+
         <div id="myForms">
 
             <form class="surround_box hidden" id="new_canvas_form" >
@@ -139,20 +51,28 @@
                     <button type="submit" class="btn">share</button>
                 </form>
 
-                <div id="unshare_list_display">
-                    <div class="btn canvas_owner_btn"> title:myTitle (owned by me) is shared with:Bob (click to unshare) </div>
-                </div>
-                <div id="unshare_list_navigation">
-                    <div class="left_right_btn_container">
-                        <div id="left_comment_btn" class="btn small_btn left_btn">Last Page</div>
-                        <div id="right_comment_btn" class="btn small_btn right_btn">Next Page</div>
+
+                <div class="surround_box">
+                    <a> This is the list of shared users for the selected canvas, click on the username to unshare the current canvas </a>
+                    <div id="unshare_list_display">
+                        <div class="btn canvas_owner_btn"> title:myTitle (owned by me) is shared with:Bob (click to unshare) </div>
+                    </div>
+                    <div id="unshare_list_navigation">
+                        <div class="left_right_btn_container">
+                            <div id="left_comment_btn" class="btn small_btn left_btn">Last Page</div>
+                            <div id="right_comment_btn" class="btn small_btn right_btn">Next Page</div>
+                        </div>
                     </div>
                 </div>
 
 
             </div>
+        </div>
+
 
     </body>
+
+    <script src="/socket.io/socket.io.js"></script>
     <script src="api.js"></script>
     <script type="module" src="index.js"></script>
 
