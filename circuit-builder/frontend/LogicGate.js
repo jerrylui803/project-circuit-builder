@@ -85,7 +85,8 @@ export class GateHandler{
     handleAddDown(x,y){
         if(this.checkHover()){
             this.components[this.hover].setPlaced(true);
-            api.uploadCanvas(ActionBuilder.buildAction(x,y,"PLACE").setObject(this.hover));
+            //api.uploadCanvas(ActionBuilder.buildAction(x,y,"ADD").setObject(Simulator.getJSON(this.components,this.connectors,this.wires,this.ports,this.hover)));
+            //api.uploadCanvas(ActionBuilder.buildAction(x,y,"PLACE").setObject(this.hover));
             this.hover = null;
         }
     }
@@ -121,7 +122,7 @@ export class GateHandler{
 
     handleMouseOut(x,y){
         if(this.checkHover()){
-            api.uploadCanvas(ActionBuilder.buildAction(x,y,"DELETE").setObject(this.hover));
+            //api.uploadCanvas(ActionBuilder.buildAction(x,y,"DELETE").setObject(this.hover));
             this.components[this.hover].queueDelete();
             this.hover = null;
         }
@@ -132,12 +133,12 @@ export class GateHandler{
     handleAddMove(type,x,y){
         if(this.checkHover()){
             this.components[this.hover].updatePosition(x,y);
-            api.uploadCanvas(ActionBuilder.buildAction(x,y,"HOVER").setObject(this.hover));
+            //api.uploadCanvas(ActionBuilder.buildAction(x,y,"HOVER").setObject(this.hover));
         }
         else{
             this.createComponent(type);
             this.components[this.hover].updatePosition(x,y);
-            api.uploadCanvas(ActionBuilder.buildAction(x,y,"ADD").setObject(Simulator.getJSON(this.components,this.connectors,this.wires,this.ports,this.hover)));
+            //api.uploadCanvas(ActionBuilder.buildAction(x,y,"ADD").setObject(Simulator.getJSON(this.components,this.connectors,this.wires,this.ports,this.hover)));
 
         }
     }

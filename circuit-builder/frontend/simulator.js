@@ -27,7 +27,7 @@ export class Simulator{
         this.wireHandler = new WireHandler(this.action,this.components,this.connectors,this.wires);
         this.connHandler = new ConnectorHandler(this.action,this.connectors,this.wires);
 
-        this.timeWindow = 250; // time in ms
+        this.timeWindow = 150; // time in ms
         this.lastExecution = new Date((new Date()).getTime() - this.timeWindow);
     }
 
@@ -200,6 +200,7 @@ export class Simulator{
             this.wireHandler.handleWireDown(x,y);
         }
         this.updateCanvas(x,y);
+        api.uploadCanvas(ActionBuilder.buildAction(x,y,"ADD").setObject(Simulator.getJSON(this.components,this.connectors,this.wires,this.ports,null)));
         //api.uploadCanvas(ActionBuilder.buildAction(x,y,"ADD").setObject(Simulator.getJSON(this.components,this.connectors,this.wires,this.ports)));
         api.uploadCanvas(ActionBuilder.buildAction(x,y,"MOUSE").setObject(true));
         this.connHandler.updateConnectors();
