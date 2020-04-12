@@ -154,11 +154,11 @@ $(document).ready(function(){
         sim.setComponent(GATE.XNOR);
     });
     $(".button-in").click(function(){
-        sim.setComponent(PORT.IN);
+        sim.setComponent(GATE.IN);
         sim.setTool(TOOL.PORT);
     });
     $(".button-out").click(function(){
-        sim.setComponent(PORT.OUT);
+        sim.setComponent(GATE.OUT);
         sim.setTool(TOOL.PORT);
     });
 

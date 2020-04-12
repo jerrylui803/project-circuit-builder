@@ -9,11 +9,14 @@ export const GATE = {
     NAND: 3,
     NOR: 4,
     XOR: 5,
-    XNOR: 6
+    XNOR: 6,
+    IN: 7,
+    OUT: 8,
+    NULL: 9
 }
 export const PORT = {
-    IN: 0,
-    OUT: 1
+    IN: 7,
+    OUT: 8
 }
 export const TOOL = {
     ADD: 0,

@@ -107,7 +107,7 @@ export class PortHandler{
         if(x == this.downx && y == this.downy){
             for(let key in this.ports){
                 if(this.ports[key].checkMouseHitbox(x,y)){
-                    if(this.ports[key].getType() == PORT.IN){
+                    if(this.ports[key].getType() == GATE.IN){
                         this.ports[key].toggleValue();
                         api.uploadCanvas(ActionBuilder.buildAction(x,y,"TOGGLE").setObject(key));
                         break;
@@ -154,7 +154,7 @@ export class PortHandler{
         this.ports[newPort.getID()] = newPort;
 
         let connector;
-        if(type == PORT.IN){
+        if(type == GATE.IN){
             connector = (new Connector(uuidv4(),newPort.getID(),CONNECTOR.OUT,0,15,0,0))
         }
         else{ ////id,type,init,size,offsetX,offsetY
@@ -310,7 +310,7 @@ export class Port{
             c.stroke();
             c.closePath();
         }
-        if(this.type == PORT.IN){
+        if(this.type == GATE.IN){
             c.beginPath();
             c.font = "15px Arial";
             c.fillStyle = "grey";
