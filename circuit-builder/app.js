@@ -4,43 +4,32 @@
 
 
 // Setup basic express server
-let express = require('express');
-let path = require('path');
-let helmet = require('helmet');
-let app = express();
-let fs = require("fs");
-let http = require("http");
-let https = require("https");
+const express = require('express');
+const app = express();
 
+// Other dependencies
+const path = require('path');
+const fs = require("fs");
+const http = require("http");
+const https = require("https");
+
+
+// for parsing
 const bodyParser = require('body-parser');
 app.use(bodyParser.urlencoded({ extended: false }));
 app.use(bodyParser.json());
 
 // for security
+const validator = require('validator');
+const bcrypt = require('bcrypt');
+const helmet = require('helmet');
 app.use(helmet());
-
-
-// // Set up mongoose connection
-// let mongoose = require('mongoose');
-// //let dev_db_url = 'mongodb://someuser:abcd1234@ds123619.mlab.com:23619/productstutorial';
-// let dev_db_url = 'mongodb://localhost:27017/test1';
-// let mongoDB = process.env.MONGODB_URI || dev_db_url;
-// console.log(mongoDB)
-// 
-// //https://github.com/Automattic/mongoose/issues/8156
-// mongoose.connect(mongoDB, {useUnifiedTopology: true, useNewUrlParser: true } );
-// mongoose.Promise = global.Promise;
-// let db = mongoose.connection;
-// db.on('error', console.error.bind(console, 'MongoDB connection error:'));
-// 
-//    console.log("db object points to the database : "+ mongoose.connections);
 
 
 const session = require('express-session');
 
 const cookie = require('cookie');
 
-var RedisStore = require("connect-redis")(session);
 
 let port = process.env.PORT || 3000;
 
@@ -134,11 +123,6 @@ app.use(sessionMiddleware);
 //});
 
 
-
-
-const bcrypt = require('bcrypt');
-
-let mongoose = require('mongoose')
 
 // https://www.w3schools.com/nodejs/nodejs_mongodb_insert.asp
 let MongoClient = require('mongodb').MongoClient;
@@ -303,6 +287,7 @@ MongoClient.connect(url, function(err, db) {
 
                 if (!room) {
                     // this is possible - if the user deleted a canvas but socket id hasn't been updated
+                    //                    or if the user just got removed from a canvas that he/she used to have access to
                     console.log(" this user hasn't select which canvas to update (this is possible)")
                     return;
                 }
@@ -371,8 +356,6 @@ MongoClient.connect(url, function(err, db) {
 
             socket.on('switch canvas', (owner, title) => {
 
-                //TODO: IMPLEMENT THIS 
-
 
                 // We need to check the relationship between 'username', 'owner' and 'title'
                 // username and owner might not be the same!
@@ -411,6 +394,8 @@ MongoClient.connect(url, function(err, db) {
 
 
                         names[socket.id] = username;
+                        socketIds[username] = socket.id;
+
 
                         // TODO: add check to owner and title that it cannot contain the special character '#'
                         allUsers[socket.id] = socket;
@@ -418,7 +403,6 @@ MongoClient.connect(url, function(err, db) {
                         socket.join(room);
                         // register rooms to their names
                         rooms[socket.id] = room;
-
 
                         let diagrams = dbo.collection("diagrams");
 
@@ -430,8 +414,6 @@ MongoClient.connect(url, function(err, db) {
                                 console.log(title)
                                 console.log(diagram)
 
-
-
                                 if (!diagram) {
                                     // This item might have been deleted already, remove this socketid from pointing
                                     // to this item
@@ -439,11 +421,6 @@ MongoClient.connect(url, function(err, db) {
                                     // Then of course no updating needed since no such item
                                     return;
                                 }
-
-
-
-
-
 
                                 io.to(socket.id).emit(diagram.canvas);
                             }
@@ -458,12 +435,6 @@ MongoClient.connect(url, function(err, db) {
 
             });
 
-
-
-
-
-
-
         } else {
             console.log("Unauthenicated user is attempting to connect!")
         }
@@ -471,11 +442,43 @@ MongoClient.connect(url, function(err, db) {
     });
 
 
+    // Sanitization
+    let checkUsername = function(req, res, next) {
+        if (!validator.isAlphanumeric(req.body.username)) return res.status(400).end("username must contain only alpha-numeric characters.");
+        next();
+    };
+
+    let checkOwner = function(req, res, next) {
+        if (!validator.isAlphanumeric(req.params.owner)) return res.status(400).end("owner must contain only alpha-numeric characters.");
+        next();
+    };
+
+    let checkTargetUsername = function(req, res, next) {
+        if (!validator.isAlphanumeric(req.body.targetUsername)) return res.status(400).end("target username must contain only alpha-numeric characters.");
+        next();
+    };
+
+    let checkShareUsername = function(req, res, next) {
+        if (!validator.isAlphanumeric(req.params.shareUsername)) return res.status(400).end("share username must contain only alpha-numeric characters.");
+        next();
+    };
+
+    let checkTitleBody = function(req, res, next) {
+        if (!validator.isAlphanumeric(req.body.title)) return res.status(400).end("title must contain only alpha-numeric characters.");
+        next();
+    };
+
+    let checkTitleParams = function(req, res, next) {
+        if (!validator.isAlphanumeric(req.params.title)) return res.status(400).end("title must contain only alpha-numeric characters.");
+        next();
+    };
+
+
 
 
     // copied from lecture code: CSCC09/lectures/05/src/todo/
     // curl -H "Content-Type: application/json" -X POST -d '{"username":"alice","password":"alice"}' -c cookie.txt localhost:3000/signup/
-    app.post('/signup/', function (req, res, next) {
+    app.post('/signup/', checkUsername, function (req, res, next) {
         let username = req.body.username;
         let password = req.body.password;
         console.log("here is the username: ", username)
@@ -489,6 +492,8 @@ MongoClient.connect(url, function(err, db) {
 
             if (err) return res.status(500).end(err);
             if (user) return res.status(409).end("username " + username + " already exists");
+
+            if (username == '' || password == '') return res.status(400).end("Either username or password is empty");
 
             // generate a new salt and hash
             bcrypt.genSalt(10, function(err, salt) {
@@ -527,7 +532,7 @@ MongoClient.connect(url, function(err, db) {
 
     // copied from lecture code: CSCC09/lectures/05/src/todo/
     // curl -H "Content-Type: application/json" -X POST -d '{"username":"alice","password":"alice"}' -c cookie.txt localhost:3000/signin/
-    app.post('/signin/', function (req, res, next) {
+    app.post('/signin/', checkUsername, function (req, res, next) {
         let username = req.body.username;
         let password = req.body.password;
 
@@ -576,7 +581,7 @@ MongoClient.connect(url, function(err, db) {
 
     // new canvas
     // The owner of the canvas is automatically determined based on the cookie
-    app.post('/api/canvas/', isAuthenticated, function (req, res, next) {
+    app.post('/api/canvas/', isAuthenticated, checkTitleBody, function (req, res, next) {
         console.log("THIS IS THE USERNAME OF THE USER WHO MADE A NEW CANVAS")
         console.log(req.user._id);
         console.log(req.body.title)
@@ -607,7 +612,7 @@ MongoClient.connect(url, function(err, db) {
                         console.log("WE ARE DONE!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
                         console.log(err)
                         if (err) return res.status(500).end(err);
-                        else return res.json("title " + username + " created");
+                        else return res.json("title " + title + " created");
                     });
 
                     // console.log('broast cast   1')
@@ -710,6 +715,11 @@ MongoClient.connect(url, function(err, db) {
         let startIndex = parseInt(req.params.startIndex);
         let canvasLength = parseInt(req.params.canvasLength);
 
+        // check if startIndex and canvasLength are integers
+        if (!Number.isInteger(startIndex) || !Number.isInteger(canvasLength)) {
+            return res.status(400).end("Please enter startIndex and canvasLength as integers.");
+        };
+
         if (err) throw err;
         let dbo = db.db("mydb");
         let diagrams = dbo.collection("diagrams");
@@ -777,7 +787,7 @@ MongoClient.connect(url, function(err, db) {
     //
     // use the username from the cookie, so no need to explicitely pass the username when
     // using this api
-    app.post('/api/size/share', isAuthenticated, function (req, res, next) {
+    app.post('/api/size/share', isAuthenticated, checkTitleBody, function (req, res, next) {
 
         console.log(" IN SIZE OF SHARE USERS: logging parameters: username and titele")
 
@@ -793,9 +803,6 @@ MongoClient.connect(url, function(err, db) {
 
 
         dbo.collection('diagramShare').aggregate([
-            // {$match:
-            //     {'shareUsername': username}
-            // },
 
             { $lookup:
                 {
@@ -819,12 +826,9 @@ MongoClient.connect(url, function(err, db) {
             ,
 
             { $match :
-                { owner: username}
+                { owner: username, title: title}
             }
             ,
-
-
-
             { $match : 
                 {
                     'shareUsername': {
@@ -870,6 +874,15 @@ MongoClient.connect(url, function(err, db) {
 
         console.log(username);
 
+
+
+        // check if startIndex and userLength are integers
+        if (!Number.isInteger(startIndex) || !Number.isInteger(userLength)) {
+            return res.status(400).end("Please enter startIndex and userLength as integers.");
+        };
+
+
+
         let title = (req.body.title);
 
         if (err) throw err;
@@ -912,7 +925,7 @@ MongoClient.connect(url, function(err, db) {
             ,
 
             { $match : 
-                { owner: username}
+                { owner: username, title: title},
             }
             ,
             { $match : 
@@ -947,7 +960,7 @@ MongoClient.connect(url, function(err, db) {
 
 
 
-    app.delete('/api/canvas/data/:title', isAuthenticated, function(req, res, next) {
+    app.delete('/api/canvas/data/:title', isAuthenticated, checkTitleParams, function(req, res, next) {
 
         console.log("RUNNING DELETE")
         let owner = req.user._id;
@@ -988,7 +1001,7 @@ MongoClient.connect(url, function(err, db) {
 
 
 
-    app.delete('/api/canvas/unshare/:title/:shareUsername', isAuthenticated, function(req, res, next) {
+    app.delete('/api/canvas/unshare/:title/:shareUsername', isAuthenticated, checkTitleParams, checkShareUsername, function(req, res, next) {
 
         console.log("RUNNING UNSHAREING A USER")
         let owner = req.user._id;
@@ -1017,6 +1030,22 @@ MongoClient.connect(url, function(err, db) {
                 if (err) throw err;
                 console.log("Diagram shared deleted.");
 
+                // We have now removed the user from the shareDiagram database
+
+                // Now if this user is already editing the diagram (through socketio), then we
+                // need to remove this user immediately
+ 
+                let shareUserSocketID = socketIds[shareUsername]
+                let prevRoom = rooms[shareUserSocketID]
+
+                // This user can no longer write to the canvas
+                delete rooms[shareUserSocketID];
+
+
+                // This user can no longer receive updates to this canvas
+                let shareUserSocket = allUsers[shareUserSocketID];
+                shareUserSocket.leave(prevRoom);
+
             });
 
             console.log("THIS IS THE DELETED DIAGRAM")
@@ -1028,12 +1057,9 @@ MongoClient.connect(url, function(err, db) {
     });
 
 
-
-
-
     // get data for a canvas base on owner and title
     // Also check if the user is authorized to view this canvas
-    app.post('/api/canvas/data/:owner/:title', isAuthenticated, function (req, res, next) {
+    app.post('/api/canvas/data/:owner/:title', isAuthenticated, checkOwner, checkTitleParams, function (req, res, next) {
         let username = req.user._id;
         let owner = (req.params.owner);
         let title = (req.params.title);
@@ -1068,7 +1094,7 @@ MongoClient.connect(url, function(err, db) {
                         return res.json("This canvas does not exist")
                     }
                 } else {
-                    return res.status(500).end("access denied");
+                    return res.status(401).end("access denied");
                 }
             });
 
@@ -1085,7 +1111,7 @@ MongoClient.connect(url, function(err, db) {
 
 
 
-    app.post('/api/user/share/', isAuthenticated, function (req, res, next) {
+    app.post('/api/user/share/', isAuthenticated, checkTitleBody, checkTargetUsername, function (req, res, next) {
 
 
         let username = req.user._id;
