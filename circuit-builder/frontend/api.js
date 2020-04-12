@@ -101,7 +101,6 @@ let api = (function(){
         console.log("ADD TGHE FUCKING CANVASA")
 
         send("POST", "/api/canvas/" , {title: title}, function(err, res) {
-            console.log("HELLO WHAT ???????????????");
             if (err) {
                 console.log("GOT AN ERROR")
                 console.log(err)
@@ -333,6 +332,17 @@ let api = (function(){
     };
 
 
+    module.deleteCanvas = function(owner, title) {
+        // console.log("api.deleteCanvas is not implemented")
+        // return;
+        send("DELETE", "/api/canvas/data/" + owner + "/" + title + "/", null, function(err, res) {
+            notifyCanvasListListeners();
+            notifyCanvasListeners();
+        });
+    }
+
+
+
     let getCanvasData = function(owner, title, handler) {
 
 
@@ -368,6 +378,20 @@ let api = (function(){
         getCanvasList(handler);
 
     }
+
+
+    module.getRightUser = function() {
+        console.log("RIGHT CLICK");
+        canvasListPage++;
+        notifyCanvasListListeners();
+    }
+
+    module.getLeftUser = function() {
+        console.log("LEFT CLICK");
+        canvasListPage--;
+        notifyCanvasListListeners();
+    }
+
 
 
 

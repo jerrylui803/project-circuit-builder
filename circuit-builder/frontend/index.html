@@ -12,7 +12,7 @@
         <a id="current_canvas_info"></a>
     </head>
     <body>
-        <div id="myCanvas">
+        <div id="myCanvas" class="hidden">
             <div id="downlog">down: </div>
             <div id="uplog">up: </div>
             <div id="movelog">move: </div>
@@ -126,27 +126,31 @@
                     <div class="btn canvas_owner_btn"> title:myTitle   author:Bob </div>
                 </div>
                 <div id="canvas_list_navigation">
-                    <div id="gallery_owner_navigation">
-                        <div class="left_right_btn_container">
-                            <div id="left_comment_btn" class="btn small_btn left_btn">Last Page</div>
-                            <div id="right_comment_btn" class="btn small_btn right_btn">Next Page</div>
-                        </div>
+                    <div class="left_right_btn_container">
+                        <div id="left_comment_btn" class="btn small_btn left_btn">Last Page</div>
+                        <div id="right_comment_btn" class="btn small_btn right_btn">Next Page</div>
                     </div>
+                </div>
+
+                <!-- TODO: THIS FOLLOWING FORM SHOULD ONLY SHOW IF THE CURRENT LOGGED IN USER IS THE OWNER OF THE CURRENT DISPLAY CANVAS!! -->
+                <form class="surround_box hidden" id="share_canvas_form" >
+                    <div class="form_title">Share Current Canvas Form</div>
+                    <input type="text" id="target_username" class="form_element" placeholder="enter the username to share the current canvas with" name="target_username" required/>
+                    <button type="submit" class="btn">share</button>
+                </form>
+
+                <div id="unshare_list_display">
+                    <div class="btn canvas_owner_btn"> title:myTitle (owned by me) is shared with:Bob (click to unshare) </div>
+                </div>
+                <div id="unshare_list_navigation">
+                    <div class="left_right_btn_container">
+                        <div id="left_comment_btn" class="btn small_btn left_btn">Last Page</div>
+                        <div id="right_comment_btn" class="btn small_btn right_btn">Next Page</div>
+                    </div>
+                </div>
+
+
             </div>
-
-            <!-- TODO: THIS FOLLOWING FORM SHOULD ONLY SHOW IF THE CURRENT LOGGED IN USER IS THE OWNER OF THE CURRENT DISPLAY CANVAS!! -->
-            <form class="surround_box hidden" id="share_canvas_form" >
-                <div class="form_title">Share Current Canvas Form</div>
-                <input type="text" id="target_username" class="form_element" placeholder="enter the username to share the current canvas with" name="target_username" required/>
-                <button type="submit" class="btn">share</button>
-            </form>
-
-
-
-
-
-
-        </div>
 
     </body>
     <script src="api.js"></script>

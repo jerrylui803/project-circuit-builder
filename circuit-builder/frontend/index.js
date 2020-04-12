@@ -309,12 +309,26 @@ $(document).ready(function(){
             // create a new user element
             let elmt = document.createElement('div');
             elmt.className = "btn gallery_owner_btn";
+
             elmt.innerHTML = `
-                 <div>owner: ${owner}    title:${title}</div>
+                 <div>owner: ${owner}    title:${title}
+                 <div class="delete-icon icon"></div>
                  `;
 
             // add this element to the document
             document.getElementById("canvas_list_display").prepend(elmt);
+
+
+            elmt.querySelector('.delete-icon').addEventListener('click', function (e) {
+                // item._id is commentId
+                api.deleteCanvas(owner, title);
+            });
+
+            // if the signed in user isn't the owner of the canvas, then don't show the delete button
+            if (signedInUser !== owner) {
+                elmt.querySelector('.delete-icon').style.visibility = "hidden";
+            }
+
 
             elmt.addEventListener('click', function(e) {
                 // document.querySelector("#current_user_info").innerHTML = '';

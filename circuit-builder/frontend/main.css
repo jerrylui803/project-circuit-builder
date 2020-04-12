@@ -95,10 +95,12 @@ img{
 
 .left_btn{
     float: left;
+    padding-bottom: 30px;
 }
 
 .right_btn{
     float: right;
+    padding-bottom: 30px;
 }
 
 .gallery_owner_btn{

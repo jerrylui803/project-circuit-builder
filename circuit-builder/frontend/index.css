@@ -67,3 +67,20 @@ header #title{
      border-radius:10px;
      padding:5px 10px 5px 10px;
 }
+
+.icon{
+    width:50px;
+    height: 50px;
+    background-position: center;
+    background-repeat: no-repeat;
+    background-size:75%;
+
+}
+
+.delete-icon{
+    background-image: url('./media/delete-icon.png');
+    /* align right */
+    /* https://stackoverflow.com/questions/7693224/how-do-i-right-align-div-elements */
+    margin-left:auto;
+    margin-right:0;
+}
