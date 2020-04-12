@@ -35,13 +35,18 @@ export class ConnectorHandler{
         }
     }
 
-    static getJSON(conn){
+    static getJSON(conn,hover){
         let output = {};
         let connectors = [];
         for(let key in conn){
             if(conn.hasOwnProperty(key)){
                 let curr = conn[key];
                 let connector = {};
+                if(!curr.getPlaced()){ //if not placed (might be hover)
+                    if(curr.getGateID() != hover){ //if its not my hover, then dont send
+                        continue;
+                    }
+                }
                 connector["id"] = curr.getID();
                 connector["gateid"] = curr.getGateID();
                 connector["x"] = Math.round((curr.getX()+Number.EPSILON)*1000)/1000;
@@ -123,6 +128,9 @@ export class Connector{
     }
     getSize(){
         return this.d;
+    }
+    getPlaced(){
+        return this.placed;
     }
 
     getGateID(){

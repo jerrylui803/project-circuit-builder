@@ -50,7 +50,7 @@ export class GateHandler{
         }
     }
 
-    static getJSON(component){
+    static getJSON(component,hover){
         let output = {};
         let components = [];
         for(let key in component){
@@ -58,6 +58,11 @@ export class GateHandler{
                 let curr = component[key];
                 let gate = {};
                 gate["id"] = curr.getID();
+                if(!curr.getPlaced()){ //if not placed (might be hover)
+                    if(curr.getID() != hover){ //if its not my hover, then dont send
+                        continue;
+                    }
+                }
                 gate["x"] = Math.round((curr.getX()+Number.EPSILON)*1000)/1000;
                 gate["y"] = Math.round((curr.getY()+Number.EPSILON)*1000)/1000;
                 gate["type"] = curr.getType();
@@ -89,7 +94,7 @@ export class GateHandler{
         for(let key in this.components){
             if(this.components[key].checkMouseHitbox(x,y)){
                 this.components[key].queueDelete();
-                // api.uploadCanvas(ActionBuilder.buildAction(x,y,"DELETE").setObject(key));
+                api.uploadCanvas(ActionBuilder.buildAction(x,y,"DELETE").setObject(key));
                 //api.uploadCanvas(ActionBuilder.buildAction(x,y,"ADD").setObject(Simulator.getJSON(this.components,this.connectors,this.wires,this.ports)));
                 break;
             }
@@ -132,7 +137,7 @@ export class GateHandler{
         else{
             this.createComponent(type);
             this.components[this.hover].updatePosition(x,y);
-            api.uploadCanvas(ActionBuilder.buildAction(x,y,"ADD").setObject(Simulator.getJSON(this.components,this.connectors,this.wires,this.ports)));
+            api.uploadCanvas(ActionBuilder.buildAction(x,y,"ADD").setObject(Simulator.getJSON(this.components,this.connectors,this.wires,this.ports,this.hover)));
 
         }
     }

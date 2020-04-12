@@ -45,13 +45,18 @@ export class PortHandler{
         }
     }
 
-    static getJSON(port){
+    static getJSON(port,hover){
         let output = {};
         let ports = [];
         for(let key in port){
             if(port.hasOwnProperty(key)){
                 let curr = port[key];
                 let io = {};
+                if(!curr.getPlaced()){ //if not placed (might be hover)
+                    if(curr.getID() != hover){ //if its not my hover, then dont send
+                        continue;
+                    }
+                }
                 io["id"] = curr.getID();
                 io["x"] = Math.round((curr.getX()+Number.EPSILON)*1000)/1000;
                 io["y"] = Math.round((curr.getY()+Number.EPSILON)*1000)/1000;
@@ -135,7 +140,7 @@ export class PortHandler{
         else{
             this.createComponent(type);
             this.ports[this.hover].updatePosition(x,y);
-            api.uploadCanvas(ActionBuilder.buildAction(x,y,"ADD").setObject(Simulator.getJSON(this.components,this.connectors,this.wires,this.ports)));
+            api.uploadCanvas(ActionBuilder.buildAction(x,y,"ADD").setObject(Simulator.getJSON(this.components,this.connectors,this.wires,this.ports,this.hover)));
         }
     }
 

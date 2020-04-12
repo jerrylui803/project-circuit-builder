@@ -27,7 +27,7 @@ export class Simulator{
         this.wireHandler = new WireHandler(this.action,this.components,this.connectors,this.wires);
         this.connHandler = new ConnectorHandler(this.action,this.connectors,this.wires);
 
-        this.timeWindow = 50; // time in ms
+        this.timeWindow = 250; // time in ms
         this.lastExecution = new Date((new Date()).getTime() - this.timeWindow);
     }
 
@@ -59,6 +59,7 @@ export class Simulator{
         let y = state.y;
         let object = state.object;
         if(action == "ADD"){
+            //console.log(state);
             this.connHandler.updateState(object.connHandler);
             this.wireHandler.updateState(object.wireHandler);
             this.gateHandler.updateState(object.gateHandler);
@@ -80,7 +81,7 @@ export class Simulator{
         }
         else if(action == "DELETE"){
             this.components[object].queueDelete();
-            console.log(this.components[object]);
+            //console.log(this.components[object]);
             this.connHandler.updateConnectors();
             this.updateGates();
             this.updateWires();
@@ -88,7 +89,6 @@ export class Simulator{
         }
         else if(action == "DELETEWIRE"){
             this.wires[object].queueDelete();
-            console.log(this.components[object]);
             this.updateCanvas(x,y);
         }
         else if(action == "PLACEWIRE"){
@@ -150,16 +150,16 @@ export class Simulator{
     }
 
 
-    static getJSON(gates,connectors,wires,ports){
+    static getJSON(gates,connectors,wires,ports,hover){
         let output = {};
         // output["gateHandler"] = this.gateHandler.getJSON();
         // output["portHandler"] = this.portHandler.getJSON();
         // output["wireHandler"] = this.wireHandler.getJSON();
         // output["connHandler"] = this.connHandler.getJSON();
-        output["connHandler"] = ConnectorHandler.getJSON(connectors);
+        output["connHandler"] = ConnectorHandler.getJSON(connectors,hover);
         output["wireHandler"] = WireHandler.getJSON(wires);
-        output["gateHandler"] = GateHandler.getJSON(gates);
-        output["portHandler"] = PortHandler.getJSON(ports);
+        output["gateHandler"] = GateHandler.getJSON(gates,hover);
+        output["portHandler"] = PortHandler.getJSON(ports,hover);
 
         return output;
         
@@ -179,6 +179,8 @@ export class Simulator{
     }
 
     handleMouseDown(x,y,dx,dy){
+        console.log(this.components);
+        console.log(this.connectors);
         if(this.selectedTool == TOOL.ADD){
             this.gateHandler.handleAddDown(x,y);
         }
@@ -198,7 +200,7 @@ export class Simulator{
             this.wireHandler.handleWireDown(x,y);
         }
         this.updateCanvas(x,y);
-        api.uploadCanvas(ActionBuilder.buildAction(x,y,"ADD").setObject(Simulator.getJSON(this.components,this.connectors,this.wires,this.ports)));
+        //api.uploadCanvas(ActionBuilder.buildAction(x,y,"ADD").setObject(Simulator.getJSON(this.components,this.connectors,this.wires,this.ports)));
         api.uploadCanvas(ActionBuilder.buildAction(x,y,"MOUSE").setObject(true));
         this.connHandler.updateConnectors();
         this.updateGates();
@@ -242,13 +244,13 @@ export class Simulator{
         if(this.selectedTool == TOOL.MOVE){
             this.gateHandler.handleMoveUp(x,y);
             this.portHandler.handleMoveUp(x,y,dx,dy);
-            api.uploadCanvas(ActionBuilder.buildAction(x,y,"ADD").setObject(Simulator.getJSON(this.components,this.connectors,this.wires,this.ports)));
+            //api.uploadCanvas(ActionBuilder.buildAction(x,y,"ADD").setObject(Simulator.getJSON(this.components,this.connectors,this.wires,this.ports)));
         }
         api.uploadCanvas(ActionBuilder.buildAction(x,y,"MOUSE").setObject(false));
     }
 
     handleMouseOut(x,y,dx,dy){
-        this.generateTruthTable();
+        //this.generateTruthTable();
         this.gateHandler.handleMouseOut(x,y);
         this.portHandler.handleMouseOut(x,y);
         this.updateCanvas(x,y);
@@ -272,9 +274,9 @@ export class Simulator{
             this.gateHandler.handleMoveMove(dx,dy);
             this.portHandler.handleMoveMove(dx,dy);
         }
-        this.renderCanvas(x,y);
         if(this.allowedUpdate())
             api.uploadCanvas(ActionBuilder.buildAction(x,y,"MOUSE").setObject(null));
+        this.renderCanvas(x,y);
     }
 
     renderCanvas(x,y){
