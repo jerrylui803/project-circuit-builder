@@ -50,6 +50,7 @@ export class Simulator{
             this.wireHandler.updateState(test.wireHandler);
             this.gateHandler.updateState(test.gateHandler);
             this.portHandler.updateState(test.portHandler);
+            let x = 
             this.updateCanvas(x,y);
             return;
         }
