@@ -81,14 +81,22 @@ export class ConnectorHandler{
         }
         //Add wires to each connector
         for(let key in this.wires){
-            if(this.wires[key].getStart() && this.wires[key].getStart().getID()){
+            if(this.wires[key].getStart()){
                 let s = this.wires[key].getStart().getID();
                 this.connectors[s].addWire(this.wires[key]);
             }
-            if(this.wires[key].getEnd() && this.wires[key].getEnd().getID()){
+            if(this.wires[key].getEnd()){
                 let e = this.wires[key].getEnd().getID();
                 this.connectors[e].addWire(this.wires[key]);
             }
+            // if(this.wires[key].getStart() && this.wires[key].getStart().getID()){
+            //     let s = this.wires[key].getStart().getID();
+            //     this.connectors[s].addWire(this.wires[key]);
+            // }
+            // if(this.wires[key].getEnd() && this.wires[key].getEnd().getID()){
+            //     let e = this.wires[key].getEnd().getID();
+            //     this.connectors[e].addWire(this.wires[key]);
+            // }
         }
     }
 
@@ -155,14 +163,17 @@ export class Connector{
 
     removeWire(id){
         for(let i = 0; i < this.wires.length; i++){
-            if(this.wires.getID() == id){
-                this.wires[i].queueDelete();
+            if(this.wires[i].getID() == id){
+                this.wires.splice(i, 1);
             }
         }
     }
 
     destroyWires(){
-        this.wires.forEach(wire => wire.queueDelete());
+        let i = 0;
+        while(i < this.wires.length){
+            this.wires[i].queueDelete();
+        }
     }
 
     updatePosition(x, y){

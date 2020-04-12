@@ -5,6 +5,8 @@ import {Connector, ConnectorHandler} from "./Connector.js";
 import {uuidv4} from "./Functions.js";
 import {CONNECTOR,GATE,PORT,TOOL} from "./Enumeration.js";
 import {Action,ActionBuilder} from "./Action.js";
+import {Graph} from "./Graph.js";
+import {BooleanExpression} from "./BooleanExpression.js";
 
 //this file operates the simulator
 export class Simulator{
@@ -204,6 +206,37 @@ export class Simulator{
         this.updateCanvas(x,y);
     }
 
+    generateTruthTable(){
+        let g = new Graph((Object.keys(this.components).length)
+        +(Object.keys(this.ports).length));
+        //Add all vertex to graph
+        for(let key in this.components){
+        let curr = this.components[key];
+        curr = curr.getID();
+        g.addVertex(curr);
+        }
+        for(let key in this.ports){
+        let curr = this.ports[key];
+        curr = curr.getID();
+        g.addVertex(curr);
+        }
+        //iterate over all edges and add them to the graph
+        for(let key in this.wires){
+        let start = this.wires[key].getStart().getGateID();
+        let end = this.wires[key].getEnd().getGateID();
+        g.addEdge(start,end);
+        }
+        //g.printGraph();
+        //console.log(g.isCyclic());
+        if(g.isCyclic()){
+            return "error cannot calculate truth table of sequential circuit.";
+        }
+
+        let b = new BooleanExpression(this.ports,this.components,this.wires);
+        b.buildExpression();
+        return b.evaluateAll();
+    }
+
     handleMouseUp(x,y,dx,dy){
         this.toString();
         if(this.selectedTool == TOOL.MOVE){
@@ -215,6 +248,7 @@ export class Simulator{
     }
 
     handleMouseOut(x,y,dx,dy){
+        this.generateTruthTable();
         this.gateHandler.handleMouseOut(x,y);
         this.portHandler.handleMouseOut(x,y);
         this.updateCanvas(x,y);
@@ -319,7 +353,7 @@ export class Simulator{
         let inputs = 0;
         let outputs = 0;
         for(let key in this.ports){
-            if(this.ports[key].getType() == PORT.IN){
+            if(this.ports[key].getType() == GATE.IN){
                 this.ports[key].setnum(inputs);
                 inputs++;
             }
