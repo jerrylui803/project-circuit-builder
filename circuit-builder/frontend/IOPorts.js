@@ -76,7 +76,8 @@ export class PortHandler{
     handleAddDown(x,y){
         if(this.checkHover()){
             this.ports[this.hover].setPlaced(true);
-            api.uploadCanvas(ActionBuilder.buildAction(x,y,"PLACEPORT").setObject(this.hover));
+            //api.uploadCanvas(ActionBuilder.buildAction(x,y,"ADD").setObject(Simulator.getJSON(this.components,this.connectors,this.wires,this.ports,this.hover)));
+            //api.uploadCanvas(ActionBuilder.buildAction(x,y,"PLACEPORT").setObject(this.hover));
             this.hover = null;
         }
     }
@@ -124,7 +125,7 @@ export class PortHandler{
 
     handleMouseOut(x,y){
         if(this.checkHover()){
-            api.uploadCanvas(ActionBuilder.buildAction(x,y,"DELETEPORT").setObject(this.hover));
+            //api.uploadCanvas(ActionBuilder.buildAction(x,y,"DELETEPORT").setObject(this.hover));
             this.ports[this.hover].queueDelete();
             this.hover = null;
         }
@@ -135,12 +136,12 @@ export class PortHandler{
     handleAddMove(type,x,y){
         if(this.checkHover()){
             this.ports[this.hover].updatePosition(x,y);
-            api.uploadCanvas(ActionBuilder.buildAction(x,y,"HOVERPORT").setObject(this.hover));
+            //api.uploadCanvas(ActionBuilder.buildAction(x,y,"HOVERPORT").setObject(this.hover));
         }
         else{
             this.createComponent(type);
             this.ports[this.hover].updatePosition(x,y);
-            api.uploadCanvas(ActionBuilder.buildAction(x,y,"ADD").setObject(Simulator.getJSON(this.components,this.connectors,this.wires,this.ports,this.hover)));
+            //api.uploadCanvas(ActionBuilder.buildAction(x,y,"ADD").setObject(Simulator.getJSON(this.components,this.connectors,this.wires,this.ports,this.hover)));
         }
     }
 
