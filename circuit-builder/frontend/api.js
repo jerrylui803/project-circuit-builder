@@ -52,6 +52,7 @@ let api = (function(){
 
     let canvasListeners = [];
     let canvasListListeners = [];
+    let unshareListListeners = [];
     let signinListeners = [];
 
     socket.on('broadcast canvas', (data) => {
@@ -70,6 +71,7 @@ let api = (function(){
             if (err) return notifyErrorListeners(err);
             notifySigninListeners(getUsername());
             notifyCanvasListListeners();
+            // notifyUnshareListListeners();
         });
     };
 
@@ -161,6 +163,8 @@ let api = (function(){
     let canvasListPerPage = 3; 
 
 
+    let unshareListPage = -1;
+    let unshareListPerPage = 3; 
 
     let getUsername = function(){
         console.log("FFF")
@@ -245,48 +249,88 @@ let api = (function(){
             }
         });
 
-
-
-
-        // send("GET", "/api/size/user/", null, function(err, res) {
-        //     if (err) {
-        //         return notifyErrorListeners(err);
-        //     }
-        //     let userCount = res.size;
-
-        //     // init  userPage
-        //     if (userCount > 0 && userPage === -1) {
-        //         userPage = 0;
-        //     }
-        //     // If there are no users
-        //     if (userPage === -1) {
-        //         return myHandler(null, "", "");
-        //     }
-        //     if (userCount != 0) {
-        //         let startIndex = userPage * userPerPage;
-        //         let userLength = userPerPage;
-        //         send("GET", "/api/user/" + startIndex + "/" + userLength + "/", null, function(err, res) {
-        //             if (err) {
-        //                 return notifyErrorListeners(err);
-        //             }
-
-        //             ret = res;
-        //             ret[0].left_btn = false;
-        //             ret[0].right_btn = false;
-        //             if (startIndex > 0) {
-        //                 ret[0].left_btn = true;
-        //             }
-        //             if (startIndex + userPerPage < userCount) {
-        //                 ret[0].right_btn = true;
-        //             }
-        //             // Note that getUsername() might not be the same user as displayGalleryOwner
-        //             myHandler(ret, getUsername(), displayGalleryOwner);
-        //         });
-        //     } else {
-        //         myHandler([], getUsername(), displayGalleryOwner);
-        //     }
-        // });
     };
+
+
+
+
+        // Get the list of editible canvas for the current user.
+        // Then pass this list to myHandler
+        // TODO!!!
+    let getUnshareList = function(myHandler) {
+        console.log("GET UNSHARE LIST IS NOT IMPEMENTED")
+
+        let username = getUsername();
+
+        console.log("In getUnshareList!!")
+        console.log(username)
+        console.log(currCanvasOwner)
+
+        // If user hasn't login or is not the owner of the current display canvas
+        if (username === "" || username != currCanvasOwner) {
+            return myHandler(null, "");
+        }
+
+        // get the number of shared users who can edit the current canvas
+        // Backend will determine the username using the cookie, so no need to send username. 
+        // (but do need to send the title)
+        //
+        // A user can only check the number of shared users of his/her own titles
+
+        send("POST", "/api/size/share", {title: currCanvasTitle}, function(err, res) {
+
+            if (err) {
+                return notifyErrorListeners(err);
+            }
+            let userCount = res.size;
+            console.log("LOGGING COUNT in the unshare list ")
+            console.log(userCount)
+
+            // return;
+
+            // init unshareListPage 
+            if (userCount > 0 && unshareListPage === -1) {
+                unshareListPage = 0;
+            }
+            // If there are no editable canvas 
+            if (unshareListPage === -1) {
+                return myHandler(null, "");
+            }
+            if (userCount != 0) {
+                let startIndex = unshareListPage * unshareListPerPage;
+                let unshareListLength = unshareListPerPage;
+                // send("GET", "/api/canvas/title/" + startIndex + "/" + unshareListLength + "/", null, function(err, res) {
+                send("POST", "/api/user/unshare/" + startIndex + "/" + unshareListLength + "/", {title: currCanvasTitle}, function(err, res) {
+                    if (err) {
+                        return notifyErrorListeners(err);
+                    }
+
+
+                    let ret = res;
+                    console.log("Logging the result from getting all the canvas titles")
+                    console.log(ret)
+                    console.log(ret)
+                    ret[0].left_btn = false;
+                    ret[0].right_btn = false;
+                    if (startIndex > 0) {
+                        ret[0].left_btn = true;
+                    }
+                    if (startIndex + canvasListPerPage < userCount) {
+                        ret[0].right_btn = true;
+                    }
+                    // Note that getUsername() might not be the same user as displayGalleryOwner
+                    myHandler(ret, username);
+                });
+            } else {
+                myHandler([], username);
+            }
+        });
+    };
+
+
+
+
+
 
 
     // Set module.getUsername as a variable so that index.js can reference its value
@@ -319,6 +363,7 @@ let api = (function(){
 
         //notifyCanvasListeners will fetch the data to update canvas (from the backend)
         notifyCanvasListeners(owner, title, null);
+        notifyUnshareListListeners();
 
         //
         socket.emit('switch canvas', owner, title);
@@ -335,9 +380,23 @@ let api = (function(){
     module.deleteCanvas = function(owner, title) {
         // console.log("api.deleteCanvas is not implemented")
         // return;
-        send("DELETE", "/api/canvas/data/" + owner + "/" + title + "/", null, function(err, res) {
+        currCanvasTitle = null; 
+        currCanvasOwner = null; 
+        send("DELETE", "/api/canvas/data/" + title + "/", null, function(err, res) {
             notifyCanvasListListeners();
             notifyCanvasListeners();
+            notifyUnshareListListeners();
+        });
+    }
+
+
+
+
+    module.unshareCanvas = function(shareUsername) {
+        send("DELETE", "/api/canvas/unshare/" + currCanvasTitle + "/" + shareUsername + "/", null, function(err, res) {
+            notifyCanvasListListeners();
+            notifyCanvasListeners();
+            notifyUnshareListListeners();
         });
     }
 
@@ -379,6 +438,15 @@ let api = (function(){
 
     }
 
+    module.onUnshareListUpdate = function(handler){
+        unshareListListeners.push(handler);
+        // TODO: get the list of canvas list listeners (pagnitaged), and call the handler
+
+        getUnshareList(handler);
+
+    }
+
+
 
     module.getRightUser = function() {
         console.log("RIGHT CLICK");
@@ -391,6 +459,19 @@ let api = (function(){
         canvasListPage--;
         notifyCanvasListListeners();
     }
+
+
+
+    module.getRightUnshare = function() {
+        unshareListPage++;
+        notifyUnshareListListeners();
+    }
+
+    module.getLeftUnshare = function() {
+        unshareListPage--;
+        notifyUnshareListListeners();
+    }
+
 
 
 
@@ -409,12 +490,16 @@ let api = (function(){
     function notifyCanvasListeners(title, owner, canvas) {
         canvasListeners.forEach(function(listener){
             // if we do not have data to update, then call the api and ask for the data
+            
             if (!canvas && title && owner) {
                 getCanvasData(title, owner, listener)
             } else if (canvas && !title && !owner){
                 listener(canvas, title, owner)
             } else {
                 console.log("SOMETHING WENT WRONG IN notifyCanvasListeners")
+                console.log(canvas)
+                console.log(title)
+                console.log(owner)
             }
 
         });
@@ -435,6 +520,18 @@ let api = (function(){
             listener(getUsername());
         });
     }
+
+
+    function notifyUnshareListListeners() {
+
+        console.log("Unshare list notify")
+        unshareListListeners.forEach(function(listener){
+            getUnshareList(listener);
+        });
+    }
+
+
+
 
     // ERRORS ***************************************************************************
 

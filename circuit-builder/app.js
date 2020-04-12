@@ -153,8 +153,8 @@ MongoClient.connect(url, function(err, db) {
 
 MongoClient.connect(url, function(err, db) {
     if (err) throw err;
-    var dbo = db.db("mydb");
-    dbo.dropDatabase();
+    let dbo = db.db("mydb");
+    // dbo.dropDatabase();
     dbo.createCollection("users", function(err, res) {
         if (err) throw err;
         console.log("Collection users created!");
@@ -267,6 +267,7 @@ MongoClient.connect(url, function(err, db) {
     let rooms = {};    // map socket.id => room
     let names = {};    // map socket.id => name
     let allUsers = {}; // map socket.id => socket
+    let socketIds = {} // map name      => socket.id  (this is for removing a user)
 
 
     io.on('connection', (socket) => {
@@ -676,8 +677,8 @@ MongoClient.connect(url, function(err, db) {
             { $count: "myCount"}
 
         ]).toArray(function(err, count) {
-            console.log("printing in size function")
-            console.log(count)
+            // console.log("printing in size function")
+            // console.log(count)
 
             if (err) {
                 return res.status(500).end(err);
@@ -768,48 +769,172 @@ MongoClient.connect(url, function(err, db) {
             return res.json(canvasList)
         });
 
+    });
 
-        // dbo.collection('diagrams').aggregate([
-        //     { $lookup:
-        //         {
-        //             from: 'diagramShare',
-        //             localField: 'shareUsername',
-        //             foreignField: 'owner',
-        //             as: 'owner222'
-        //         }
-        //     }, 
-        //     { $lookup:
-        //         {
-        //             from: 'diagramShare',
-        //             localField: 'title',
-        //             foreignField: 'title',
-        //             as: 'title222'
-        //         }
-        //     }
 
-        // ]).toArray(function(err, res) {
-        //     console.log("CHECK THIS")
-        //     console.log(res)
-        //     console.log((res[0]).title222)
-        //     console.log((res[0]).owner222)
 
-        // });
+    // return the total number of shared users for a given canvas
+    //
+    // use the username from the cookie, so no need to explicitely pass the username when
+    // using this api
+    app.post('/api/size/share', isAuthenticated, function (req, res, next) {
 
-        //  diagrams.find().sort({"created_at":1}).skip(startIndex).limit(canvasLength).project({title:1, owner:1, _id:0}).toArray( function(err, canvas){
-        //      if (err) return res.status(500).end(err);
-        //      //console.log(canvas);
-        //      return res.json(canvas)
-        //  });
+        console.log(" IN SIZE OF SHARE USERS: logging parameters: username and titele")
+
+        let username = req.user._id;
+
+        let title = (req.body.title);
+        console.log(username)
+        console.log(title)
+
+        if (err) throw err;
+        let dbo = db.db("mydb");
+        let diagrams = dbo.collection("diagrams");
+
+        dbo.collection('diagramShare').aggregate([
+            // {$match:
+            //     {'shareUsername': username}
+            // },
+
+            { $lookup:
+                {
+                    from: "diagrams",
+                    let: { myTitle: "$title", myOwner: "$owner"},
+                    pipeline: [
+                        { $match:
+                            { $expr:
+                                { $and:
+                                    [
+                                        { $eq: [ "$title", "$$myTitle"] },
+                                        { $eq: [ "$owner", "$$myOwner"] }
+                                    ]
+                                }
+                            }
+                        }
+                    ],
+                    as: "temp"
+                }
+            }
+            ,
+            { $match : 
+                {
+                    'shareUsername': {
+                        $nin: [ username ]
+                    }
+                }
+            }
+            ,
+            { $project: { "title": 1, "owner": 1, "shareUsername" :1, _id: 0 }},
+            { $count: "myCount"}
+
+        ]).toArray(function(err, count) {
+            // console.log("printing in size function")
+            // console.log(count)
+            console.log(count)
+            console.log(" IN SIZE OF SHARE USERS DONE----------------")
+
+            if (err) {
+                return res.status(500).end(err);
+            } else {
+                if (count[0]) {
+                    return res.json({size: (count[0]).myCount});
+                } else {
+                    return res.json({size: 0})
+                }
+            }
+        });
+    });
+
+
+
+
+
+    // TODO APR12!!!!!!!!!!!!!!!!!!!!!!!!!
+
+    // get several shared usernames who has can edit the current canvas
+    // Start from the 'startIndex'-th canvas, and return total of 'userLength' number of canvas
+    app.post('/api/user/unshare/:startIndex/:userLength', isAuthenticated, function (req, res, next) {
+        let username = req.user._id;
+        let startIndex = parseInt(req.params.startIndex);
+        let userLength = parseInt(req.params.userLength);
+        console.log("LOGGING IN UNSHARE")
+
+        let title = (req.body.title);
+
+        if (err) throw err;
+        let dbo = db.db("mydb");
+        let diagrams = dbo.collection("diagrams");
+        let diagramShare = dbo.collection("diagramShare");
+
+
+        //TODO: might need to also store insert time stampt
+        //
+
+        // diagrams.find({username: username}, {hash:0, createdAt:0, updatedAt:0}).sort(
+        //     {createdAt:1}).skip(startIndex).limit(canvasLength).exec(function(err, canvas) {
+        //
+        //
+
+
+        // https://kb.objectrocket.com/mongo-db/how-to-use-the-lookup-function-in-mongodb-1277
+
+        dbo.collection('diagramShare').aggregate([
+            { $lookup:
+                {
+                    from: "diagrams",
+                    let: { myTitle: "$title", myOwner: "$owner"},
+                    pipeline: [
+                        { $match:
+                            { $expr:
+                                { $and:
+                                    [
+                                        { $eq: [ "$title", "$$myTitle"] },
+                                        { $eq: [ "$owner", "$$myOwner" ] }
+                                    ]
+                                }
+                            }
+                        }
+                    ],
+                    as: "temp"
+                }
+            }
+            ,
+            { $match : 
+                {
+                    'shareUsername': {
+                        $nin: [ username ]
+                    }
+                }
+            }
+            ,
+            { $sort : { owner : 1, title: 1 }},
+            { $skip : startIndex },
+            { $limit: userLength},
+            { $project: { "title": 1, "owner": 1, "shareUsername": 1, _id: 0 }}
+        ]).toArray(function(err, canvasList) {
+            // console.log("CHECK THIS")
+            // console.log(typeof(canvasList[0].temp))
+            // console.log(canvasList)
+            
+
+            if (err) return res.status(500).end(err);
+            console.log("LOGGING IN UNSHARE DONE !!!!!!!!!!!!!!!!!!!!!!1")
+            console.log(canvasList)
+            return res.json(canvasList)
+        });
 
     });
 
 
 
-    app.delete('/api/canvas/data/:owner/:title', isAuthenticated, function(req, res, next) {
+
+
+
+
+    app.delete('/api/canvas/data/:title', isAuthenticated, function(req, res, next) {
 
         console.log("RUNNING DELETE")
-        let username = req.user._id;
-        let owner = (req.params.owner);
+        let owner = req.user._id;
         let title = (req.params.title);
 
 
@@ -822,7 +947,7 @@ MongoClient.connect(url, function(err, db) {
         diagrams.findOne({title: title, owner: owner}, function(err, canvas){
 
             // only owner can delete diagram
-            if (username != owner) return res.status(401).end("only owner can delete diagram");
+            // if (username != owner) return res.status(401).end("only owner can delete diagram");
 
             // if diagram does not exist
             if (!canvas) return res.status(404).end("the diagram does not exist");
@@ -844,6 +969,56 @@ MongoClient.connect(url, function(err, db) {
             return res.json(canvas)
         });
     });
+
+
+
+    app.delete('/api/canvas/unshare/:title/:shareUsername', isAuthenticated, function(req, res, next) {
+
+        console.log("RUNNING UNSHAREING A USER")
+        let owner = req.user._id;
+        // let owner = (req.params.owner);
+        let title = (req.params.title);
+        let shareUsername = (req.params.shareUsername);
+
+
+        let dbo = db.db('mydb');
+
+        let diagrams = dbo.collection("diagrams");
+        let diagramShare = dbo.collection("diagramShare");
+
+
+        diagramShare.findOne({title: title, owner: owner, shareUsername}, function(err, canvas){
+
+            if (err) throw err;
+            // only owner can delete diagram
+            // if (username != owner) return res.status(401).end("only owner can delete diagram");
+
+            // if diagram does not exist
+            if (!canvas) return res.status(404).end("the diagram does not exist");
+
+            // delete the diagram
+            diagramShare.deleteOne({title: title, owner: owner, shareUsername: shareUsername}, function(err, canvas1) {
+                if (err) throw err;
+                console.log("Diagram shared deleted.");
+
+            });
+
+            console.log("THIS IS THE DELETED DIAGRAM")
+            console.log(canvas)
+
+
+
+
+
+
+            return res.json(canvas)
+        });
+    });
+
+
+
+
+
 
 
 
@@ -878,12 +1053,13 @@ MongoClient.connect(url, function(err, db) {
                 if (err) return res.status(500).end(err);
                 if (shareWith) {
                     // console.log('returning the canvas')
-                     console.log(canvas.canvas)
-                    // if (canvas.canvas) {
+                    if (canvas.canvas) {
                         return res.json(canvas.canvas)
-                    // } else {
-                    //     return res.json("")
-                    // }
+                    } else {
+                        console.log("This canvas does not exist")
+                        console.log("SHOULD NOT BE POSSIBLE WITHOUT USER MODIFYING FRONT END!")
+                        return res.json("This canvas does not exist")
+                    }
                 } else {
                     return res.status(500).end("access denied");
                 }

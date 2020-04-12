@@ -235,10 +235,8 @@ $(document).ready(function(){
             // then switch to the newly created canvas and display the canvas
             //
             api.switchCanvas(username, title);
-            document.querySelector('#myCanvas').classList.remove('hidden');
-
-            // TODO: DOUBLE CHECK THIS
-            document.querySelector('#share_canvas_form').classList.remove('hidden');
+            // document.querySelector('#myCanvas').classList.remove('hidden');
+            // document.querySelector('#share_canvas_form').classList.remove('hidden');
 
         }
     });
@@ -322,6 +320,14 @@ $(document).ready(function(){
             elmt.querySelector('.delete-icon').addEventListener('click', function (e) {
                 // item._id is commentId
                 api.deleteCanvas(owner, title);
+
+
+
+                //TODO Apr12: doesn't work !!!!!!!!!!!!!1
+                // document.querySelector('#myCanvas').classList.add('hidden');
+                // document.querySelector('#share_canvas_form').classList.add('hidden');
+
+
             });
 
             // if the signed in user isn't the owner of the canvas, then don't show the delete button
@@ -423,10 +429,81 @@ $(document).ready(function(){
             api.getRightUser();
         });
         document.getElementById("canvas_list_navigation").prepend(elmtNavigation);
+   });
 
+
+
+
+
+    api.onUnshareListUpdate(function (items, signedInUser ) {
+        console.log("ON UNSHARE LIST UPDATE LOGGING")
+        console.log(items)
+
+        document.querySelector('#unshare_list_display').innerHTML = '';
+        document.querySelector('#unshare_list_navigation').innerHTML = '';
+        // document.querySelector("#current_user_info").innerHTML = '';
+
+
+        if (items == null || items.length === 0) {
+            return;
+        }
+
+        let left_btn = items[0].left_btn;
+        let right_btn = items[0].right_btn;
+
+        items.forEach(function (item) {
+
+            // owner of the canvas
+            // let owner = item.owner;
+            // let title = item.title;
+            let shareUsername = item.shareUsername;
+
+            // create a new user element
+            let elmt = document.createElement('div');
+            elmt.className = "btn gallery_owner_btn";
+
+            elmt.innerHTML = `
+                 <div> share with : ${shareUsername}</div>
+                 `;
+
+            // add this element to the document
+            document.getElementById("unshare_list_display").prepend(elmt);
+
+
+            elmt.addEventListener('click', function(e) {
+
+                api.unshareCanvas(shareUsername);
+
+            });
+        });
+
+
+        // create a new element for the navigation buttons
+        let elmtNavigation = document.createElement('div');
+        elmtNavigation.innerHTML = `
+            <div class="left_right_btn_container">
+                <div id="left_user_btn" class="btn small_btn left_btn">Last Page</div>
+                <div id="right_user_btn" class="btn small_btn right_btn">Next Page</div>
+            </div>
+            `;
+
+        if (!left_btn) {
+            elmtNavigation.querySelector('#left_user_btn').style.visibility = "hidden";
+        }
+        if (!right_btn) {
+            elmtNavigation.querySelector('#right_user_btn').style.visibility = "hidden";
+        }
+        elmtNavigation.querySelector('#left_user_btn').addEventListener('click', function (e) {
+            api.getLeftUnshare();
+        });
+        elmtNavigation.querySelector('#right_user_btn').addEventListener('click', function (e) {
+            api.getRightUnshare();
+        });
+        document.getElementById("unshare_list_navigation").prepend(elmtNavigation);
 
 
    });
+
 
 
 });
