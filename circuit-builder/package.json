@@ -1,7 +1,7 @@
 {
   "name": "circuit-builder",
   "version": "1.0.0",
-  "description": "* Kevin Zhu * Jerry Lui * Kezaram Tharmasegaram",
+  "description": "A real-time application where you can build logic circuits while sharing with your friends.",
   "main": "index.js",
   "dependencies": {
     "bcrypt": "^4.0.1",
@@ -17,12 +17,13 @@
     "mongodb": "^3.5.5",
     "mongoose": "^5.9.5",
     "pm2": "^4.2.3",
-    "socketio": "^1.0.0"
+    "socketio": "^1.0.0",
+    "validator": "^13.0.0"
   },
   "devDependencies": {},
   "scripts": {
     "start": "export NODE_ENV=production && node app"
   },
-  "author": "",
+  "author": "Kevin Zhu * Jerry Lui * Kezaram Tharmasegaram",
   "license": "ISC"
 }
