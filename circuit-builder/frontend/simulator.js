@@ -274,6 +274,7 @@ export class Simulator{
         else if(this.selectedTool == TOOL.MOVE){
             this.gateHandler.handleMoveMove(dx,dy);
             this.portHandler.handleMoveMove(dx,dy);
+            
         }
         if(this.allowedUpdate())
             api.uploadCanvas(ActionBuilder.buildAction(x,y,"MOUSE").setObject(null));

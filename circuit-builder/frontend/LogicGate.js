@@ -15,10 +15,6 @@ export class GateHandler{
         this.moving = null;
     }
 
-    toObject(gate){
-
-    }
-
     updateState(state){
         for(let key in this.components){
             delete this.components[key];

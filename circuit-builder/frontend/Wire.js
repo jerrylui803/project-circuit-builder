@@ -232,7 +232,7 @@ export class WireHandler{
     }
     cancelWire(x,y){
         if(this.checkHover()){
-            delete this.wires[this.hover];
+            this.wires[this.hover].queueDelete();
             api.uploadCanvas(ActionBuilder.buildAction(x,y,"DRAWING").setObject(this.hover));
         }
             
