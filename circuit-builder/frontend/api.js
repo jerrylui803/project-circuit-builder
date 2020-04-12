@@ -306,12 +306,19 @@ let api = (function(){
             }
             // If there are no editable canvas 
             if (unshareListPage === -1) {
-            console.log("FAIL 2")
                 return myHandler(null, "");
             }
             if (userCount != 0) {
                 let startIndex = unshareListPage * unshareListPerPage;
                 let unshareListLength = unshareListPerPage;
+
+                console.log("ASIODHAOSIDHASOIDHASOIDA")
+                console.log(startIndex)
+                console.log(unshareListLength)
+                if (startIndex >= userCount) {
+                    startIndex = startIndex - unshareListLength;
+                }
+
                 // send("GET", "/api/canvas/title/" + startIndex + "/" + unshareListLength + "/", null, function(err, res) {
                 send("POST", "/api/user/unshare/" + startIndex + "/" + unshareListLength + "/", {title: currCanvasTitle}, function(err, res) {
                     if (err) {
