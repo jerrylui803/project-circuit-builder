@@ -41,8 +41,8 @@ $(document).ready(function(){
     }
 
     function resizeCanvas(w, h){
-        c.canvas.width = w - 20;
-        c.canvas.height = h - 50;
+        c.canvas.width = w - 288;
+        c.canvas.height = h - 300;
         scaleX = canvas.width / canvas.getBoundingClientRect().width;
         scaleY = canvas.height / canvas.getBoundingClientRect().height;
         offsetX = canvas.offsetLeft;
@@ -50,12 +50,27 @@ $(document).ready(function(){
     }
 
     function updateMousePos(e){
-        let mouseX = parseInt(e.clientX - canvas.offsetLeft);
-        let mouseY = parseInt(e.clientY - canvas.offsetTop);
+        var totalOffsetX = 0;
+        var totalOffsetY = 0;
+        var canvasX = 0;
+        var canvasY = 0;
+        var currentElement = canvas;
+    
+        do{
+            totalOffsetX += currentElement.offsetLeft - currentElement.scrollLeft;
+            totalOffsetY += currentElement.offsetTop - currentElement.scrollTop;
+        }
+        while(currentElement = currentElement.offsetParent)
+    
+        canvasX = event.pageX - totalOffsetX;
+        canvasY = event.pageY - totalOffsetY;
+    
+        currX = canvasX;
+        currY = canvasY;
+
         prevX = currX;
         prevY = currY;
-        currX = (mouseX * scaleX) + document.body.scrollLeft + document.documentElement.scrollLeft;;
-        currY = (mouseY * scaleY) + document.body.scrollTop + document.documentElement.scrollTop;;
+        
         mouseDx = currX - prevX;
         mouseDy = currY - prevY;
     }
@@ -166,6 +181,39 @@ $(document).ready(function(){
         speed = $("#slider1").val();
         //sim.setSimSpeed(speed);
         //console.log($("#slider1").val());
+    });
+
+    $(".button-truthtable").click(function(){
+        let truthtable = sim.generateTruthTable();
+        let elmt = document.getElementById("truthtablemodal");
+        let html = "";
+
+        for(let i = 0; i < truthtable.length; i++){
+            let inputs = truthtable[i].inputs;
+            let outputs = truthtable[i].outputs;
+            let vars = truthtable[i].vars;
+            let name = truthtable[i].name;
+
+            //for each var, add header to table
+            html += '<table class="table"><thead><tr>';
+            for(let x = 0; x < vars.length; x++){
+                html += '<th scope="col">'+vars[x]+'</th>';
+            }
+            html += '<th scope="col">'+name+'</th>';
+            html += '</tr></thead><tbody><tr>';
+            //for each input row
+            for(let x = 0; x < inputs.length; x++){
+                //for each current input
+                let curr = inputs[x];
+                for(let k = 0; k < curr.length; k++){
+                    html += '<td>'+curr[k]+'</td>';
+                }
+                html += '<td>'+outputs[x]+'</td>';
+                html += '</tr>';
+            }
+            html += '</tbody></table>';
+        }
+        elmt.innerHTML = html;
     });
 
 
