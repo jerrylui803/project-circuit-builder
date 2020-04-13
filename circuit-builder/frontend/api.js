@@ -233,6 +233,11 @@ let api = (function(){
             if (canvasCount != 0) {
                 let startIndex = canvasListPage * canvasListPerPage;
                 let canvasListLength = canvasListPerPage;
+
+                if (startIndex >= canvasCount) {
+                    startIndex = startIndex - canvasListLength;
+                }
+
                 send("GET", "/api/canvas/title/" + startIndex + "/" + canvasListLength + "/", null, function(err, res) {
                     if (err) {
                         return notifyErrorListeners(err);
@@ -312,9 +317,6 @@ let api = (function(){
                 let startIndex = unshareListPage * unshareListPerPage;
                 let unshareListLength = unshareListPerPage;
 
-                console.log("ASIODHAOSIDHASOIDHASOIDA")
-                console.log(startIndex)
-                console.log(unshareListLength)
                 if (startIndex >= userCount) {
                     startIndex = startIndex - unshareListLength;
                 }
@@ -580,9 +582,13 @@ let api = (function(){
         errorListeners.push(listener);
     };
 
-
-
-
+    (function refresh(){
+        setTimeout(function(e){
+            notifyCanvasListListeners();
+            notifyUnshareListListeners();
+            refresh();
+        }, 4000);
+    }());
 
     return module;
 })();
