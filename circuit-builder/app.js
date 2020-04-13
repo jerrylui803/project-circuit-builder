@@ -82,7 +82,7 @@ let sessionMiddleware = session({
     // https://expressjs.com/en/advanced/best-practice-security.html
     cookie: {
         httpOnly: true,
-        secure: false, // remove secure flag in localhost
+        secure: true, // remove secure flag in localhost
         sameSite: true
     }
 });
