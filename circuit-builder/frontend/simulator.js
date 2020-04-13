@@ -59,7 +59,6 @@ export class Simulator{
         let y = state.y;
         let object = state.object;
         if(action == "ADD"){
-            //console.log(state);
             this.connHandler.updateState(object.connHandler);
             this.wireHandler.updateState(object.wireHandler);
             this.gateHandler.updateState(object.gateHandler);
@@ -81,7 +80,6 @@ export class Simulator{
         }
         else if(action == "DELETE"){
             this.components[object].queueDelete();
-            //console.log(this.components[object]);
             this.connHandler.updateConnectors();
             this.updateGates();
             this.updateWires();
@@ -131,42 +129,16 @@ export class Simulator{
         this.connHandler.updateConnectors();
         this.updateGates();
         this.updateWires();
-        // let gateHandler = state.gateHandler;
-        // let portHandler = state.portHandler;
-        // let wireHandler = state.wireHandler;
-        // let connHandler = state.connHandler;
-
-        // if(!state){
-        //     return
-        // }
-        // this.connHandler.updateState(state.connHandler);
-
-
-        // this.gateHandler.updateState(state.gateHandler);
-
-        // this.wireHandler.updateState(state.wireHandler);
-
-        //console.log("updating sim canvas");
     }
-
 
     static getJSON(gates,connectors,wires,ports,hover){
         let output = {};
-        // output["gateHandler"] = this.gateHandler.getJSON();
-        // output["portHandler"] = this.portHandler.getJSON();
-        // output["wireHandler"] = this.wireHandler.getJSON();
-        // output["connHandler"] = this.connHandler.getJSON();
         output["connHandler"] = ConnectorHandler.getJSON(connectors,hover);
         output["wireHandler"] = WireHandler.getJSON(wires);
         output["gateHandler"] = GateHandler.getJSON(gates,hover);
         output["portHandler"] = PortHandler.getJSON(ports,hover);
 
         return output;
-        
-        // console.log(JSON.stringify(this.gateHandler.getJSON()));
-        // console.log(JSON.stringify(this.portHandler.getJSON()));
-        // console.log(JSON.stringify(this.wireHandler.getJSON()));
-        // console.log(JSON.stringify(this.connectorHandler.getJSON()));
     }
 
     setTool(tool){
@@ -179,8 +151,6 @@ export class Simulator{
     }
 
     handleMouseDown(x,y,dx,dy){
-        console.log(this.components);
-        console.log(this.connectors);
         if(this.selectedTool == TOOL.ADD){
             this.gateHandler.handleAddDown(x,y);
         }
@@ -201,7 +171,6 @@ export class Simulator{
         }
         this.updateCanvas(x,y);
         api.uploadCanvas(ActionBuilder.buildAction(x,y,"ADD").setObject(Simulator.getJSON(this.components,this.connectors,this.wires,this.ports,null)));
-        //api.uploadCanvas(ActionBuilder.buildAction(x,y,"ADD").setObject(Simulator.getJSON(this.components,this.connectors,this.wires,this.ports)));
         api.uploadCanvas(ActionBuilder.buildAction(x,y,"MOUSE").setObject(true));
         this.connHandler.updateConnectors();
         this.updateGates();
@@ -229,8 +198,6 @@ export class Simulator{
         let end = this.wires[key].getEnd().getGateID();
         g.addEdge(start,end);
         }
-        //g.printGraph();
-        //console.log(g.isCyclic());
         if(g.isCyclic()){
             return "error cannot calculate truth table of sequential circuit.";
         }
@@ -245,13 +212,11 @@ export class Simulator{
         if(this.selectedTool == TOOL.MOVE){
             this.gateHandler.handleMoveUp(x,y);
             this.portHandler.handleMoveUp(x,y,dx,dy);
-            //api.uploadCanvas(ActionBuilder.buildAction(x,y,"ADD").setObject(Simulator.getJSON(this.components,this.connectors,this.wires,this.ports)));
         }
         api.uploadCanvas(ActionBuilder.buildAction(x,y,"MOUSE").setObject(false));
     }
 
     handleMouseOut(x,y,dx,dy){
-        //this.generateTruthTable();
         this.gateHandler.handleMouseOut(x,y);
         this.portHandler.handleMouseOut(x,y);
         this.updateCanvas(x,y);
@@ -368,8 +333,4 @@ export class Simulator{
         }
         this.renderCanvas(x,y);
     }
-
-
-
-
 }

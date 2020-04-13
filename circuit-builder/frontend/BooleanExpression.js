@@ -37,7 +37,6 @@ export class BooleanExpression{
                     env[key] = input[k];
                     k++;
                 }
-                //console.log(this.env,this.exprlist[i].evaluate(false,this.env)[0]);
                 let res = (this.exprlist[i].evaluate(false,env)[0]) ? 1 : 0
                 outputs.push(res);
             }
@@ -45,7 +44,6 @@ export class BooleanExpression{
             result["name"] = "output"+i;
             results.push(result);
         }
-        console.log(results);
         return results;
     }
 
@@ -107,8 +105,6 @@ export class BooleanExpression{
             this.env[("input"+component.getNum())] = 0;
             let variable = new ExpressionTree("input"+component.getNum());
             this.exprstack[this.exprstack.length-1].addChild(variable);
-
-            //console.log("var");
             return;
         }
         let inputs = component.getInputs();
@@ -118,14 +114,11 @@ export class BooleanExpression{
         this.exprstack[this.exprstack.length-1].addChild(child);
         this.exprstack.push(child);
 
-        //console.log(component.getType());
-
         for(let i = 0; i < inputs.length; i++){ //iterate over input connectors
             let wires = inputs[i].getWires();
             if(wires.length == 0){
                 let leaf = new ExpressionTree(GATE.NULL);
                 this.exprstack[this.exprstack.length-1].addChild(leaf);
-                //console.log("leaf");
             }
             //iterate through all wires for this connector
             for(let j = 0; j < wires.length; j++){ //for each connected gate

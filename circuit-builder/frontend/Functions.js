@@ -6,6 +6,8 @@ export const fold = (reducer, init, xs) => {
     return acc;
 };
 
+// I love CSCC24
+// https://dev.to/mebble/learn-to-fold-your-js-arrays-2o8p
 export const or = xs => fold((acc, x) => acc | x, 0, xs);
 export const and = xs => fold((acc, x) => acc & x, 1, xs);
 export const xor = xs => fold((acc, x) => acc ^ x, null, xs);
@@ -16,7 +18,6 @@ export function uuidv4() {
     );
 }
   
-
 export function pDistance(x, y, x1, y1, x2, y2) {
 
     let a = x - x1;

@@ -179,8 +179,6 @@ $(document).ready(function(){
 
     $("#slider1").change(function(e){
         speed = $("#slider1").val();
-        //sim.setSimSpeed(speed);
-        //console.log($("#slider1").val());
     });
 
     $(".button-truthtable").click(function(){
@@ -218,29 +216,20 @@ $(document).ready(function(){
 
 
     api.onCanvasUpdate(function (myCanvas, title, owner) {
-
-       
         sim.updateState(myCanvas);
         return;
     });
-
 
     // Switch to the canvas base on the url parameters
 
     // https://www.sitepoint.com/get-url-parameters-with-javascript/
     const queryString = window.location.search;
-    console.log(queryString);
     const urlParams = new URLSearchParams(queryString);
     const currTitle = urlParams.get('title')
     const currOwner = urlParams.get('owner')
 
-    console.log("HERE IS TEH PARAMETERS:")
-    console.log(currTitle)
-    console.log(currOwner)
-   
     api.switchCanvas(currOwner, currTitle)
 
-    
     document.querySelector('#current_canvas_info').innerHTML = '';
     let elmt = document.createElement('a');
     elmt.className = "sub_header";
@@ -249,8 +238,6 @@ $(document).ready(function(){
                  `;
     // add this element to the document
     document.getElementById("current_canvas_info").prepend(elmt);
-
-
 
 });
 

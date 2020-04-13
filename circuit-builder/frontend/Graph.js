@@ -62,9 +62,6 @@ export class Graph {
             for(var j of values){
                 c += j+" ";
             }
-            console.log(key+" -> "+c);
         }
     }
-
-
 }
