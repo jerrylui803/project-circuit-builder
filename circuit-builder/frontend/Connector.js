@@ -94,19 +94,9 @@ export class ConnectorHandler{
                 let e = this.wires[key].getEnd().getID();
                 this.connectors[e].addWire(this.wires[key]);
             }
-            // if(this.wires[key].getStart() && this.wires[key].getStart().getID()){
-            //     let s = this.wires[key].getStart().getID();
-            //     this.connectors[s].addWire(this.wires[key]);
-            // }
-            // if(this.wires[key].getEnd() && this.wires[key].getEnd().getID()){
-            //     let e = this.wires[key].getEnd().getID();
-            //     this.connectors[e].addWire(this.wires[key]);
-            // }
         }
     }
-
 }
-
 
 
 export class Connector{
@@ -257,5 +247,4 @@ export class Connector{
         c.closePath();
         c.stroke();
     }
-
 }

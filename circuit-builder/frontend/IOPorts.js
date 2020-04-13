@@ -130,7 +130,6 @@ export class PortHandler{
             this.hover = null;
         }
         this.moving = null;
-        
     }
 
     handleAddMove(type,x,y){
@@ -171,8 +170,6 @@ export class PortHandler{
         this.connectors[connector.getID()] = connector;
         this.hover = newPort.getID();
     }
-
-
 }
 
 export class Port{

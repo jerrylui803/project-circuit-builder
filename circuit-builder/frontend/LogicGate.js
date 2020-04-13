@@ -343,6 +343,4 @@ export class LogicGate {
         c.stroke();
         c.closePath();
     }
-
-
 }
