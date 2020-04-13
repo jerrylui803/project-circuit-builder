@@ -104,30 +104,21 @@ $(document).ready(function(){
 
     $("#canvas").mousedown(function (e) {
         handleMouseDown(e);
-        //api.uploadCanvas(sim.getJSON());
     });
     $("#canvas").mousemove(function (e) {
         handleMouseMove(e);
-        //api.uploadCanvas(sim.getJSON());
-        //api.uploadCanvas(sim.getJSON());
-        // if ((lastExecution.getTime() + timeWindow) <= (new Date()).getTime()) {
-        //     lastExecution = new Date();
-        //     api.uploadCanvas(sim.getJSON());
-        // }
+
     });
     $("#canvas").mouseup(function (e) {
         handleMouseUp(e);
-        //api.uploadCanvas(sim.getJSON());
     });
     $("#canvas").mouseout(function (e) {
         handleMouseOut(e);
-        //api.uploadCanvas(sim.getJSON());
     });
     $(window).resize(function () {
         resize();
     });
     resize();
-    //setInterval(function(){sim.simulate(currX,currY)}, speed);
     timeout();
     function timeout() {
         setTimeout(function () {
@@ -185,31 +176,36 @@ $(document).ready(function(){
         let truthtable = sim.generateTruthTable();
         let elmt = document.getElementById("truthtablemodal");
         let html = "";
+        if(typeof truthtable === 'string' || truthtable instanceof String){
+            html = truthtable;
+            html += '<br>Please remove any feedback loops in circuit, and try again.'
+        }
+        else{
+            for(let i = 0; i < truthtable.length; i++){
+                let inputs = truthtable[i].inputs;
+                let outputs = truthtable[i].outputs;
+                let vars = truthtable[i].vars;
+                let name = truthtable[i].name;
 
-        for(let i = 0; i < truthtable.length; i++){
-            let inputs = truthtable[i].inputs;
-            let outputs = truthtable[i].outputs;
-            let vars = truthtable[i].vars;
-            let name = truthtable[i].name;
-
-            //for each var, add header to table
-            html += '<table class="table"><thead><tr>';
-            for(let x = 0; x < vars.length; x++){
-                html += '<th scope="col">'+vars[x]+'</th>';
-            }
-            html += '<th scope="col">'+name+'</th>';
-            html += '</tr></thead><tbody><tr>';
-            //for each input row
-            for(let x = 0; x < inputs.length; x++){
-                //for each current input
-                let curr = inputs[x];
-                for(let k = 0; k < curr.length; k++){
-                    html += '<td>'+curr[k]+'</td>';
+                //for each var, add header to table
+                html += '<table class="table"><thead><tr>';
+                for(let x = 0; x < vars.length; x++){
+                    html += '<th scope="col">'+vars[x]+'</th>';
                 }
-                html += '<td>'+outputs[x]+'</td>';
-                html += '</tr>';
+                html += '<th scope="col">'+name+'</th>';
+                html += '</tr></thead><tbody><tr>';
+                //for each input row
+                for(let x = 0; x < inputs.length; x++){
+                    //for each current input
+                    let curr = inputs[x];
+                    for(let k = 0; k < curr.length; k++){
+                        html += '<td>'+curr[k]+'</td>';
+                    }
+                    html += '<td>'+outputs[x]+'</td>';
+                    html += '</tr>';
+                }
+                html += '</tbody></table>';
             }
-            html += '</tbody></table>';
         }
         elmt.innerHTML = html;
     });
