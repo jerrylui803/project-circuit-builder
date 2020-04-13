@@ -64,12 +64,11 @@ $(document).ready(function(){
     
         canvasX = event.pageX - totalOffsetX;
         canvasY = event.pageY - totalOffsetY;
-    
-        currX = canvasX;
-        currY = canvasY;
-
+        
         prevX = currX;
         prevY = currY;
+        currX = canvasX;
+        currY = canvasY;
         
         mouseDx = currX - prevX;
         mouseDy = currY - prevY;
