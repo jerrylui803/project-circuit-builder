@@ -42,6 +42,7 @@ export class BooleanExpression{
             }
             result["outputs"] = outputs;
             result["name"] = "output"+i;
+            result["equation"] = this.exprlist[i].p("");
             results.push(result);
         }
         return results;

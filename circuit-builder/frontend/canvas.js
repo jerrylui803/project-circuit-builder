@@ -185,8 +185,10 @@ $(document).ready(function(){
                 let outputs = truthtable[i].outputs;
                 let vars = truthtable[i].vars;
                 let name = truthtable[i].name;
+                let equation = truthtable[i].equation;
 
                 //for each var, add header to table
+                html += '<h4>Equation: '+equation+'</h4>';
                 html += '<table class="table"><thead><tr>';
                 for(let x = 0; x < vars.length; x++){
                     html += '<th scope="col">'+vars[x]+'</th>';
