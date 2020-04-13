@@ -79,6 +79,12 @@ let sessionMiddleware = session({
     secret: "This is a secret that is used by circuit builder app :)",
     resave: false,
     saveUninitialized: true,
+    // https://expressjs.com/en/advanced/best-practice-security.html
+    cookie: {
+        httpOnly: true,
+        secure: true, // remove secure flag in localhost
+        sameSite: true
+    }
 });
 
 io.use(function(socket, next) {
@@ -140,7 +146,8 @@ MongoClient.connect(url, function(err, db) {
         let username = (req.user)? req.user._id : '';
         res.setHeader('Set-Cookie', cookie.serialize('username', username, {
             path : '/',
-            maxAge: 60 * 60 * 24 * 7 // 1 week in number of seconds
+            maxAge: 60 * 60 * 24 * 7, // 1 week in number of seconds
+            sameSite: true
         }));
         next();
     });
