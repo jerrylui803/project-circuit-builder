@@ -3,7 +3,6 @@
    
     window.addEventListener('load', function(){
         
-        
         api.onError(function(err){
             console.error("[error]", err);
         });
@@ -19,13 +18,10 @@
         });
         
         function submit(){
-            console.log(document.querySelector("form").checkValidity());
             if (document.querySelector("form").checkValidity()){
                 var username = document.querySelector("form [name=username]").value;
                 var password =document.querySelector("form [name=password]").value;
                 var action =document.querySelector("form [name=action]").value;
-                console.log(action)
-                console.log(api)
                 api[action](username, password, function(err){
                     if (err) document.querySelector('.error_box').innerHTML = err;
                 });

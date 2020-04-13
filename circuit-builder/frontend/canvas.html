@@ -44,7 +44,7 @@
           <span>Menu</span></a>
       </li>
 
-      <li class="nav-item">
+      <li class="nav-item active">
         <a class="nav-link" id="canvas_page" href="#">
           <i class="fas fa-fw fa-drafting-compass"></i>
           <span>Canvas</span></a>
@@ -92,51 +92,40 @@
           <!-- Page Heading -->
           <div class="d-sm-flex align-items-center justify-content-between mb-4">
             <h1 class="h3 mb-0 text-gray-800">
-                Credits
+              <a id="current_user_info"></a>
+              <a id="current_canvas_info"></a>
             </h1>
+            <a href="#" class="d-none d-sm-inline-block btn btn-sm btn-primary btn-lg shadow-sm button-truthtable" data-toggle="modal" data-target="#truthTableModal"><i class="fas fa-table fa-sm text-white-50"></i> Generate Truth Table</a>
           </div>
 
 
           <!-- Content Row -->
 
           <div class="row">
+
+            <!-- Area Chart -->
             <div class="col">
+            <div class="form-group">
+                <label for="formControlRange">Simulation Speed (10ms-500ms)</label>
+                <input type="range" value="10" min="1" max="500" class="form-control-range" id="slider1">
+            </div>
               <div class="card shadow mb-4">
-                <div class="card-body">
-                    <h2>Icons</h2>
-                    <ul>
-                    <li>Icons made by <a href="http://www.freepik.com" title="Freepik">Freepik</a> from <a href="http://www.flaticon.com" title="Flaticon">www.flaticon.com</a> is licensed by <a href="http://creativecommons.org/licenses/by/3.0/" title="Creative Commons BY 3.0" target="_blank">CC 3.0 BY</a></li>
-                    </ul>
-                    <h2>Buttons</h2>
-                        <ul>
-                            <li>The "add" button style was generated using: <a href="http://css3buttongenerator.com/">css3buttongenerator</a></li>
-                        </ul>
-                    <h2>HTML, CSS and Javascript code</h2>
-                    <ul>
-                        <li>What would I do without <a href="http://stackoverflow.com/">Stackoverflow</a></li>
-                        <li>https://stackoverflow.com/questions/105034/create-guid-uuid-in-javascript</li>
-                        <li>https://stackoverflow.com/questions/55677/how-do-i-get-the-coordinates-of-a-mouse-click-on-a-canvas-element</li>
-                        <li>https://dev.to/mebble/learn-to-fold-your-js-arrays-2o8p</li>
-                    </ul>
-                    <h2>Code snippet from labs and lecture code</h2>
-                    <ul>
-                        <li>There are code snippet taken from labs, assignemnts, and lecture demos.</li>
-                    </ul>
-                    <h2>Code snippet from online resources</h2>
-                    <ul>
-                        <li>Code snippet taken from online resources are cited in the code as comments with a link to the online resource.</li>
-                    </ul>
-
-                    <h2>boot strap template</h2>
-                    <ul>
-                        <li>https://startbootstrap.com/themes/sb-admin-2/<li>
-                    </ul>
-
-                    <h2>svg gates</h2>
-                    <ul>
-                        <li>This provides sharp drawings of the logic gates regardless of your monitor resolution<li>
-                        <li>https://commons.wikimedia.org/wiki/Logic_gates_unified_symbols<li>
-                    </ul>
+                <!-- Card Header - Dropdown -->
+                <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
+                  <span>
+                    <h6 class="m-0 font-weight-bold text-primary">Circuit Editor</h6>
+                  </span>
+                  <span>
+                    <a class="btn btn-primary btn-lg button-add" href="#" data-toggle="modal" data-target="#addModal">add</a>
+                    <button type="button" class="btn btn-lg btn-danger button-remove">remove</button>
+                    <button type="button" class="btn btn-lg btn-success button-move">move</button>
+                    <button type="button" class="btn btn-lg btn-success button-edge">wire</button></span>
+                </div>
+                <!-- Card Body -->
+                <div class="card-body"style="margin:0;padding:0">
+                  <div id="myCanvas">
+                    <canvas id="canvas" class="canvas"></canvas>
+                  </div>
                 </div>
               </div>
             </div>
@@ -158,6 +147,85 @@
 
   </div>
   <!-- End of Page Wrapper -->
+
+
+  <div class="modal fade" id="addModal" tabindex="-1" role="dialog" aria-hidden="true">
+    <div class="modal-dialog" role="document">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="exampleModalLabel">Choose Gate</h5>
+          <button class="close" type="button" data-dismiss="modal" aria-label="Close">
+            <span aria-hidden="true">×</span>
+          </button>
+        </div>
+        <div class="modal-body">
+        <div class="col">
+            <div class="row OUTPUT">
+                <button type="button" class="btn btn-block button-in" data-dismiss="modal">INPUT<img id="INPUT" src="media/LogicInput.svg"/></button>
+            </div>
+        </div>
+        <div class="col INPUT">
+          <div class="row OUTPUT">
+            <button type="button" class="btn btn-block button-out" data-dismiss="modal">OUTPUT<img id="OUTPUT" src="media/LogicOutput.svg"/></button>
+          </div>
+        </div>
+        <div class="col">
+            <div class="row">
+                <button type="button" class="btn btn-block button-not" data-dismiss="modal">NOT<img id="NOT-GATE" src="media/NOT.svg"/></button>
+            </div>
+        </div>
+        <div class="col">
+            <div class="row">
+                <button type="button" class="btn btn-block button-and" data-dismiss="modal">AND<img id="AND-GATE" src="media/AND.svg"/></button>
+            </div>
+        </div>
+        <div class="col">
+            <div class="row">
+                <button type="button" class="btn btn-block button-nand" data-dismiss="modal">NAND<img id="NAND-GATE" src="media/NAND.svg"/></button>
+            </div>
+        </div>
+        <div class="col">
+            <div class="row">
+                <button type="button" class="btn btn-block button-or" data-dismiss="modal">OR<img id="OR-GATE" src="media/OR.svg"/></button>
+            </div>
+        </div>
+        <div class="col">
+            <div class="row">
+                <button type="button" class="btn btn-block button-nor" data-dismiss="modal">NOR<img id="NOR-GATE" src="media/NOR.svg"/></button>
+            </div>
+        </div>
+        <div class="col">
+            <div class="row">
+                <button type="button" class="btn btn-block  button-xor" data-dismiss="modal">XOR<img id="XOR-GATE" src="media/XOR.svg"/></button>
+            </div>
+        </div>
+        <div class="col">
+            <div class="row">
+                <button type="button" class="btn btn-block  button-xnor" data-dismiss="modal">XNOR<img id="XNOR-GATE" src="media/XNOR.svg"/></button>
+            </div>
+        </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal fade" id="truthTableModal" tabindex="-1" role="dialog" aria-hidden="true">
+    <div class="modal-dialog" role="document">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="exampleModalLabel">Truth Table</h5>
+          <button class="close" type="button" data-dismiss="modal" aria-label="Close">
+            <span aria-hidden="true">×</span>
+          </button>
+        </div>
+        <div class="modal-body" id="truthtablemodal">
+            
+        </div>
+      </div>
+    </div>
+  </div>
+
+
 
   <!-- Logout Modal-->
   <div class="modal fade" id="logoutModal" tabindex="-1" role="dialog" aria-hidden="true">
