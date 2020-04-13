@@ -76,7 +76,7 @@
                 elmt.className = "btn gallery_owner_btn";
 
                 elmt.innerHTML = `
-                 <div id="switch_btn" class="btn gallery_owner_btn">owner: ${owner}    title:${title}</div>
+                 <div id="switch_btn" class="btn gallery_owner_btn">owner: ${owner}    title: ${title}</div>
                  <div class="delete-icon icon"></div>
                  `;
 
@@ -107,7 +107,7 @@
                     let elmt = document.createElement('a');
                     elmt.className = "sub_header";
                     elmt.innerHTML = `
-                    <div>You selected a canvas with  owner: ${owner} and  title:${title}</div>
+                    <div>You selected a canvas with  owner: ${owner} and  title: ${title}</div>
                     `;
                     // add this element to the document
                     document.getElementById("current_canvas_info").prepend(elmt);
