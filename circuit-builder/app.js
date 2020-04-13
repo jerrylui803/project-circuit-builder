@@ -75,20 +75,16 @@ if (process.env.NODE_ENV === 'production') {
 // Routing
 app.use(express.static(path.join(__dirname, 'frontend')));
 
-
-// TODO: needed or not?????
-// https://stackoverflow.com/questions/25532692/how-to-share-sessions-with-socket-io-1-x-and-express-4-x
-//
-// Note that connect-redis is version 3.4.2
-// https://github.com/tj/connect-redis/issues/283
-
 let sessionMiddleware = session({
-    //store: new RedisStore({}), // XXX redis server config
     secret: "This is a secret that is used by circuit builder app :)",
-    secret: "keyboard cat",
     resave: false,
     saveUninitialized: true,
-
+    // https://expressjs.com/en/advanced/best-practice-security.html
+    cookie: {
+        httpOnly: true,
+        secure: true, // remove secure flag in localhost
+        sameSite: true
+    }
 });
 
 io.use(function(socket, next) {
@@ -150,7 +146,8 @@ MongoClient.connect(url, function(err, db) {
         let username = (req.user)? req.user._id : '';
         res.setHeader('Set-Cookie', cookie.serialize('username', username, {
             path : '/',
-            maxAge: 60 * 60 * 24 * 7 // 1 week in number of seconds
+            maxAge: 60 * 60 * 24 * 7, // 1 week in number of seconds
+            sameSite: true
         }));
         next();
     });
